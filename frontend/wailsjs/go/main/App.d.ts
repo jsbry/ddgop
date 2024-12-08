@@ -12,6 +12,8 @@ export function GoRestartContainer(arg1:string):Promise<main.rRestartContainer>;
 
 export function GoStartContainer(arg1:string):Promise<main.rStartContainer>;
 
+export function GoStatsContainer():Promise<main.rContainerStats>;
+
 export function GoStopContainer(arg1:string):Promise<main.rStopContainer>;
 
 export function GoUnpauseContainer(arg1:string):Promise<main.rUnpauseContainer>;

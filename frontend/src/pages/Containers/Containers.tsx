@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { GoContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
+import { GoContainers, GoStatsContainer, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
 import { OverlayTrigger, Tooltip, Button, Modal, Dropdown } from 'react-bootstrap';
@@ -8,6 +8,8 @@ function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
+  const [memUsage, setMemUsage] = useState<string>("");
+  const [memLimit, setMemLimit] = useState<string>("");
 
   const copyToClipboard = async (txt: string) => {
     await navigator.clipboard.writeText(txt);
@@ -206,6 +208,29 @@ function Containers() {
     }).catch((err) => {
       console.log(err);
     });
+
+    const stats = GoStatsContainer();
+    stats.then((d) => {
+      if (d.error != null) {
+        throw new Error(d.error);
+      }
+      
+      d.container_stats.forEach((container) => {
+        // TODO s
+        const s = {
+          container_id: container.container_id,
+          cpu_perc: container.cpu_perc,
+          mem_perc: container.mem_perc,
+          mem_usage: container.mem_usage,
+        };
+      });
+
+      setMemUsage(d.stats.mem_usage);
+      setMemLimit(d.stats.mem_limit);
+      console.log(d.stats);
+    }).catch((err) => {
+      console.log(err);
+    });
   };
 
   const startContainer = (id: string) => {
@@ -366,6 +391,9 @@ function Containers() {
   return (
     <article>
       <div className="row">
+        <div className="col-12">
+          {memUsage} / {memLimit}
+        </div>
         <div className="col-12">
           <div className="table-area table-containers overflow-auto">
             <table className="table table-hover table-responsive-lg table-sm">

@@ -22,6 +22,10 @@ export function GoStartContainer(arg1) {
   return window['go']['main']['App']['GoStartContainer'](arg1);
 }
 
+export function GoStatsContainer() {
+  return window['go']['main']['App']['GoStatsContainer']();
+}
+
 export function GoStopContainer(arg1) {
   return window['go']['main']['App']['GoStopContainer'](arg1);
 }
