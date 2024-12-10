@@ -45,8 +45,8 @@ export namespace main {
 	    }
 	}
 	export class Stats {
-	    cpu_perc: number;
-	    mem_perc: number;
+	    cpu_usage: string;
+	    cpu_limit: string;
 	    mem_usage: string;
 	    mem_limit: string;
 	
@@ -56,8 +56,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.cpu_perc = source["cpu_perc"];
-	        this.mem_perc = source["mem_perc"];
+	        this.cpu_usage = source["cpu_usage"];
+	        this.cpu_limit = source["cpu_limit"];
 	        this.mem_usage = source["mem_usage"];
 	        this.mem_limit = source["mem_limit"];
 	    }
@@ -65,7 +65,7 @@ export namespace main {
 	export class rContainerStats {
 	    stats: Stats;
 	    container_stats: ContainerStats[];
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rContainerStats(source);
@@ -98,7 +98,7 @@ export namespace main {
 	}
 	export class rContainers {
 	    containers: Container[];
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rContainers(source);
@@ -130,7 +130,7 @@ export namespace main {
 	}
 	export class rDeleteContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rDeleteContainer(source);
@@ -144,7 +144,7 @@ export namespace main {
 	}
 	export class rPauseContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rPauseContainer(source);
@@ -158,7 +158,7 @@ export namespace main {
 	}
 	export class rRestartContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rRestartContainer(source);
@@ -172,7 +172,7 @@ export namespace main {
 	}
 	export class rStartContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rStartContainer(source);
@@ -186,7 +186,7 @@ export namespace main {
 	}
 	export class rStopContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rStopContainer(source);
@@ -200,7 +200,7 @@ export namespace main {
 	}
 	export class rUnpauseContainer {
 	    container_id: string;
-	    error: any;
+	    error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rUnpauseContainer(source);

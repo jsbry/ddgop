@@ -8,8 +8,10 @@ function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
-  const [memUsage, setMemUsage] = useState<string>("");
-  const [memLimit, setMemLimit] = useState<string>("");
+  const [memUsage, setMemUsage] = useState<string>("--");
+  const [memLimit, setMemLimit] = useState<string>("--");
+  const [cpuUsage, setCPUUsage] = useState<string>("--");
+  const [cpuLimit, setCPULimit] = useState<string>("--");
 
   const copyToClipboard = async (txt: string) => {
     await navigator.clipboard.writeText(txt);
@@ -214,6 +216,7 @@ function Containers() {
       if (d.error != null) {
         throw new Error(d.error);
       }
+      console.log(d);
       
       d.container_stats.forEach((container) => {
         // TODO s
@@ -227,7 +230,8 @@ function Containers() {
 
       setMemUsage(d.stats.mem_usage);
       setMemLimit(d.stats.mem_limit);
-      console.log(d.stats);
+      setCPUUsage(d.stats.cpu_usage);
+      setCPULimit(d.stats.cpu_limit);
     }).catch((err) => {
       console.log(err);
     });
@@ -391,8 +395,13 @@ function Containers() {
   return (
     <article>
       <div className="row">
-        <div className="col-12">
-          {memUsage} / {memLimit}
+        <div className="col-6">
+          <span>Container CPU usage</span>
+          <h5 className='fw-bold'><span className='text-success'>{cpuUsage}</span> / <span className='text-black-50'>{cpuLimit}</span></h5>
+        </div>
+        <div className="col-6">
+          <span>Container memory usage</span>
+          <h5 className='fw-bold'><span className='text-success'>{memUsage}</span> / <span className='text-black-50'>{memLimit}</span></h5>
         </div>
         <div className="col-12">
           <div className="table-area table-containers overflow-auto">

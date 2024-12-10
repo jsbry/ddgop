@@ -6,96 +6,120 @@ import (
 
 type rStartContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoStartContainer(containerID string) rStartContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker start %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rStartContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }
 
 type rStopContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoStopContainer(containerID string) rStopContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker stop %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rStopContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }
 
 type rDeleteContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker rm -f %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rDeleteContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }
 
 type rPauseContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoPauseContainer(containerID string) rPauseContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker pause %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rPauseContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }
 
 type rUnpauseContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker unpause %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rUnpauseContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }
 
 type rRestartContainer struct {
 	ContainerID string `json:"container_id"`
-	Error       error  `json:"error"`
+	Error       string `json:"error,omitempty"`
 }
 
 func (a *App) GoRestartContainer(containerID string) rRestartContainer {
+	var errs []error
 	cmd := genCmd(fmt.Sprintf("docker restart %s", containerID))
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	return rRestartContainer{
-		ContainerID: string(ps),
-		Error:       err,
+		ContainerID: string(output),
+		Error:       getErrorNotice(errs),
 	}
 }

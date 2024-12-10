@@ -1,12 +1,12 @@
 .sidebar {
     padding-top: 68px;
-    width: 280px;
+    width: 210px;
     height: 100vh;
 }
 
 .main {
     padding-top: 68px;
-    width: calc(100% - 280px);
+    width: calc(100% - 210px);
     height: 100vh;
 }
 

@@ -21,7 +21,7 @@ func main() {
 		Title:     "ddgop",
 		Width:     1024,
 		Height:    768,
-		MinWidth:  660,
+		MinWidth:  700,
 		MinHeight: 500,
 		AssetServer: &assetserver.Options{
 			Assets: assets,

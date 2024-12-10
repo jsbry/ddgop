@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"strings"
 )
 
 // App struct
@@ -51,4 +52,12 @@ func formatSize(bytes float64) string {
 	}
 
 	return fmt.Sprintf("%.2f %s", value, unit)
+}
+
+func getErrorNotice(errs []error) string {
+	var n []string
+	for _, errs := range errs {
+		n = append(n, errs.Error())
+	}
+	return strings.Join(n, "\n")
 }

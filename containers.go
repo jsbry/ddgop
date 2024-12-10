@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 )
 
 type rContainers struct {
 	Containers []Container `json:"containers"`
-	Error      error       `json:"error"`
+	Error      string      `json:"error,omitempty"`
 }
 
 type Container struct {
@@ -42,12 +43,16 @@ type ContainerJSON struct {
 }
 
 func (a *App) GoContainers() rContainers {
+	var errs []error
 	cmd := genCmd("docker ps -a --no-trunc --format '{{json .}}'")
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
 	containers := []Container{}
-	lines := strings.Split(string(ps), "\n")
+	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -83,14 +88,14 @@ func (a *App) GoContainers() rContainers {
 
 	return rContainers{
 		Containers: containers,
-		Error:      err,
+		Error:      getErrorNotice(errs),
 	}
 }
 
 type rContainerStats struct {
 	Stats          Stats            `json:"stats"`
 	ContainerStats []ContainerStats `json:"container_stats"`
-	Error          error            `json:"error"`
+	Error          string           `json:"error,omitempty"`
 }
 
 type ContainerStats struct {
@@ -101,10 +106,10 @@ type ContainerStats struct {
 }
 
 type Stats struct {
-	CPUPerc  float64 `json:"cpu_perc"`
-	MemPerc  float64 `json:"mem_perc"`
-	MemUsage string  `json:"mem_usage"`
-	MemLimit string  `json:"mem_limit"`
+	CPUUsage string `json:"cpu_usage"`
+	CPULimit string `json:"cpu_limit"`
+	MemUsage string `json:"mem_usage"`
+	MemLimit string `json:"mem_limit"`
 }
 
 type ContainerStatsJSON struct {
@@ -120,25 +125,32 @@ type ContainerStatsJSON struct {
 }
 
 var unitMap = map[string]float64{
+	"B":   1,
 	"KiB": 1024,
 	"MiB": 1024 * 1024,
 	"GiB": 1024 * 1024 * 1024,
 }
-var memUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)\s*(KiB|MiB|GiB|TiB)`)
-var memUsageTotalReg = regexp.MustCompile(`\s*\/\s*(\d+(\.\d+)?)\s*(KiB|MiB|GiB|TiB)`)
+var cpuUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)%`)
+var memUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
+var memUsageTotalReg = regexp.MustCompile(`\s*\/\s*(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
 
 func (a *App) GoStatsContainer() rContainerStats {
+	var errs []error
 	cmd := genCmd("docker stats -a --no-trunc --no-stream --format '{{json .}}'")
-	ps, err := execCmd(cmd)
-	writeBytes("output.log", ps)
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
 
+	cpuUsage := 0.0
 	memUsage := 0.0
 	stats := Stats{
 		MemUsage: "--",
 		MemLimit: "--",
 	}
 	containers := []ContainerStats{}
-	lines := strings.Split(string(ps), "\n")
+	lines := strings.Split(string(output), "\n")
 	for _, line := range lines {
 		if line == "" {
 			continue
@@ -153,36 +165,82 @@ func (a *App) GoStatsContainer() rContainerStats {
 			MemUsage:    cj.MemUsage,
 		}
 
-		match := memUsageReg.FindStringSubmatch(container.MemUsage)
-		if len(match) < 4 {
+		// CPU
+		match := cpuUsageReg.FindStringSubmatch(container.CPUPerc)
+		if len(match) < 3 {
+			errs = append(errs, fmt.Errorf("match len < 3: %#v", container.CPUPerc))
 			continue
 		}
 		value, err := strconv.ParseFloat(match[1], 64)
 		if err != nil {
-			fmt.Println("Error parsing memory value:", err)
+			errs = append(errs, fmt.Errorf("error parsing cpu value: %s", err.Error()))
+			continue
+		}
+		cpuUsage += value
+
+		// Memory
+		match = memUsageReg.FindStringSubmatch(container.MemUsage)
+		if len(match) < 4 {
+			errs = append(errs, fmt.Errorf("match len < 4: %s", container.MemUsage))
+			continue
+		}
+		value, err = strconv.ParseFloat(match[1], 64)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("error parsing memory value: %s", err.Error()))
 			continue
 		}
 		unit := match[3]
-
 		if multiplier, exists := unitMap[unit]; exists {
 			memUsage += value * multiplier
 		} else {
-			fmt.Printf("Unknown unit: %s\n", unit)
+			errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
 		}
-
 		match = memUsageTotalReg.FindStringSubmatch(container.MemUsage)
 		stats.MemLimit = fmt.Sprintf("%s %s", match[1], match[3])
 
 		containers = append(containers, container)
 	}
+	stats.CPUUsage = fmt.Sprintf("%.2f%%", cpuUsage)
+	stats.MemUsage = formatSize(memUsage)
 
-	if memUsage > 0 {
-		stats.MemUsage = formatSize(memUsage)
+	CPULimit, err := getCPULimit()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("getCPULimit err: %s", err.Error()))
 	}
+	stats.CPULimit = fmt.Sprintf("%d %%", CPULimit*100)
 
 	return rContainerStats{
 		Stats:          stats,
 		ContainerStats: containers,
-		Error:          err,
+		Error:          getErrorNotice(errs),
 	}
+}
+
+func getCPULimit() (int, error) {
+	var cmd []string
+	switch runtime.GOOS {
+	case "windows", "linux":
+		cmd = genCmd("nproc --all")
+	case "darwin":
+		cmd = genCmd("sysctl -n hw.logicalcpu_max")
+	default:
+		return 0, fmt.Errorf("unknown os")
+	}
+
+	output, err := execCmd(cmd)
+	if err != nil {
+		return 0, fmt.Errorf("execCmd err: %s", err.Error())
+	}
+	writeBytes("output.log", output)
+
+	var CPULimit int
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		CPULimit, err = strconv.Atoi(line)
+	}
+
+	return CPULimit, err
 }
