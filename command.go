@@ -1,7 +1,6 @@
 package main
 
 import (
-	"os/exec"
 	"runtime"
 )
 
@@ -14,9 +13,4 @@ func genCmd(cmd string) []string {
 	}
 
 	return cmds
-}
-
-func execCmd(cmd []string) ([]byte, error) {
-	res := exec.Command(cmd[0], cmd[1:]...)
-	return res.Output()
 }
