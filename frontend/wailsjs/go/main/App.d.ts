@@ -6,6 +6,10 @@ export function GoContainers():Promise<main.rContainers>;
 
 export function GoDeleteContainer(arg1:string):Promise<main.rDeleteContainer>;
 
+export function GoInspectContainer(arg1:string):Promise<main.rInspectContainer>;
+
+export function GoLogsContainer(arg1:string):Promise<main.rLogsContainer>;
+
 export function GoPauseContainer(arg1:string):Promise<main.rPauseContainer>;
 
 export function GoRestartContainer(arg1:string):Promise<main.rRestartContainer>;

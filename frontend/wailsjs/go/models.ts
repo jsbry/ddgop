@@ -142,6 +142,34 @@ export namespace main {
 	        this.error = source["error"];
 	    }
 	}
+	export class rInspectContainer {
+	    inspect: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rInspectContainer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.inspect = source["inspect"];
+	        this.error = source["error"];
+	    }
+	}
+	export class rLogsContainer {
+	    logs: string[];
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rLogsContainer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.logs = source["logs"];
+	        this.error = source["error"];
+	    }
+	}
 	export class rPauseContainer {
 	    container_id: string;
 	    error?: string;

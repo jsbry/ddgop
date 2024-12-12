@@ -10,6 +10,14 @@ export function GoDeleteContainer(arg1) {
   return window['go']['main']['App']['GoDeleteContainer'](arg1);
 }
 
+export function GoInspectContainer(arg1) {
+  return window['go']['main']['App']['GoInspectContainer'](arg1);
+}
+
+export function GoLogsContainer(arg1) {
+  return window['go']['main']['App']['GoLogsContainer'](arg1);
+}
+
 export function GoPauseContainer(arg1) {
   return window['go']['main']['App']['GoPauseContainer'](arg1);
 }

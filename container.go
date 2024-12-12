@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type rStartContainer struct {
@@ -121,5 +122,60 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	return rRestartContainer{
 		ContainerID: string(output),
 		Error:       getErrorNotice(errs),
+	}
+}
+
+type rLogsContainer struct {
+	Logs  []string `json:"logs"`
+	Error string   `json:"error,omitempty"`
+}
+
+func (a *App) GoLogsContainer(containerID string) rLogsContainer {
+	var errs []error
+	cmd := genCmd(fmt.Sprintf("docker container logs %s", containerID))
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
+
+	logs := []string{}
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		logs = append(logs, line)
+	}
+
+	return rLogsContainer{
+		Logs:  logs,
+		Error: getErrorNotice(errs),
+	}
+}
+
+type rInspectContainer struct {
+	Inspect string `json:"inspect"`
+	Error   string `json:"error,omitempty"`
+}
+
+func (a *App) GoInspectContainer(containerID string) rInspectContainer {
+	var errs []error
+	cmd := genCmd(fmt.Sprintf("docker container inspect %s --format '{{json .}}'", containerID))
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
+
+	var inspect string
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		inspect = line
+	}
+
+	return rInspectContainer{
+		Inspect: inspect,
+		Error:   getErrorNotice(errs),
 	}
 }

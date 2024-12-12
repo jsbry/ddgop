@@ -3,6 +3,7 @@ import { GoContainers, GoStatsContainer, GoStartContainer, GoUnpauseContainer, G
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
 import { OverlayTrigger, Tooltip, Button, Modal, Dropdown } from 'react-bootstrap';
+import Container from './Container';
 
 function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
@@ -12,6 +13,7 @@ function Containers() {
   const [memLimit, setMemLimit] = useState<string>("--");
   const [cpuUsage, setCPUUsage] = useState<string>("--");
   const [cpuLimit, setCPULimit] = useState<string>("--");
+  const [id, setID] = useState<string>("");
 
   const copyToClipboard = async (txt: string) => {
     await navigator.clipboard.writeText(txt);
@@ -115,7 +117,7 @@ function Containers() {
             <FaEllipsisVertical></FaEllipsisVertical>
           </Dropdown.Toggle>
           <Dropdown.Menu>
-            <Dropdown.Item eventKey="1" disabled={inactiveBtn}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>
+            <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>
             <Dropdown.Item eventKey="2" disabled={inactiveBtn || isPaused(state)} onClick={() => pauseContainer(id.slice(0, 12), state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
             <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id.slice(0, 12))}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
           </Dropdown.Menu>
@@ -216,8 +218,6 @@ function Containers() {
       if (d.error != null) {
         throw new Error(d.error);
       }
-      console.log(d);
-      
       d.container_stats.forEach((container) => {
         // TODO s
         const s = {
@@ -243,7 +243,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoStartContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -262,7 +261,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoUnpauseContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -281,7 +279,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoStopContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -304,7 +301,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoPauseContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -323,7 +319,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoRestartContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -342,7 +337,6 @@ function Containers() {
     }
     setInactiveBtn(true);
     const result = GoDeleteContainer(id);
-    console.log(result);
     result.then((d) => {
       if (d.error != null) {
         throw new Error(d.error);
@@ -392,65 +386,73 @@ function Containers() {
     setDelModal({ id: id, name: name, show: true });
   };
 
-  return (
-    <article>
-      <div className="row">
-        <div className="col-6">
-          <span>Container CPU usage</span>
-          <h5 className='fw-bold'><span className='text-success'>{cpuUsage}</span> / <span className='text-black-50'>{cpuLimit}</span></h5>
-        </div>
-        <div className="col-6">
-          <span>Container memory usage</span>
-          <h5 className='fw-bold'><span className='text-success'>{memUsage}</span> / <span className='text-black-50'>{memLimit}</span></h5>
-        </div>
-        <div className="col-12">
-          <div className="table-area table-containers overflow-auto">
-            <table className="table table-hover table-responsive-lg table-sm">
-              <thead className="sticky-top">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th key={header.id} colSpan={header.colSpan}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody className="table-group-divider small">
-                {table.getRowModel().rows.map((row, index) => {
-                  return (
-                    <tr key={index}>
-                      {row.getVisibleCells().map((cell) => {
-                        return (
-                          <td key={cell.column.id}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
-                        );
-                      })}
+  const RenderList = useCallback(() => {
+    return (
+      <div>
+        <div className="row">
+          <div className="col-6">
+            <span>Container CPU usage</span>
+            <h5 className='fw-bold'><span className='text-success'>{cpuUsage}</span> / <span className='text-black-50'>{cpuLimit}</span></h5>
+          </div>
+          <div className="col-6">
+            <span>Container memory usage</span>
+            <h5 className='fw-bold'><span className='text-success'>{memUsage}</span> / <span className='text-black-50'>{memLimit}</span></h5>
+          </div>
+          <div className="col-12">
+            <div className="table-area table-containers overflow-auto">
+              <table className="table table-hover table-responsive-lg table-sm">
+                <thead className="sticky-top">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id} colSpan={header.colSpan}>
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  ))}
+                </thead>
+                <tbody className="table-group-divider small">
+                  {table.getRowModel().rows.map((row, index) => {
+                    return (
+                      <tr key={index}>
+                        {row.getVisibleCells().map((cell) => {
+                          return (
+                            <td key={cell.column.id}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
 
-      <Modal show={delModal.show} onHide={() => closeDelModal()}>
-        <Modal.Header closeButton>
-          <Modal.Title>Delete container?</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>The '{delModal.name}' container is selected for deletion. Any anonymous volumes associated with this container are also deleted.</Modal.Body>
-        <Modal.Footer>
-          <Button variant="outline-secondary" onClick={() => closeDelModal()}>
-            Close
-          </Button>
-          <Button variant="danger" disabled={inactiveBtn} onClick={() => deleteContainer(delModal.id)}>
-            Delete forever
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        <Modal show={delModal.show} onHide={() => closeDelModal()}>
+          <Modal.Header closeButton>
+            <Modal.Title>Delete container?</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>The '{delModal.name}' container is selected for deletion. Any anonymous volumes associated with this container are also deleted.</Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => closeDelModal()}>
+              Close
+            </Button>
+            <Button variant="danger" disabled={inactiveBtn} onClick={() => deleteContainer(delModal.id)}>
+              Delete forever
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      </div>
+    )
+  }, [table, delModal]);
+
+  return (
+    <article>
+      {id ? <Container id={id} setID={setID}></Container> : <RenderList></RenderList>}
     </article>
   )
 }

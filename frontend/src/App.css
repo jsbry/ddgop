@@ -19,17 +19,21 @@
     min-width: 30px;
     width: 30px;
 }
+
 .table-containers th:nth-of-type(2),
 .table-containers th:nth-of-type(3) {
     min-width: 150px;
     width: 150px;
 }
+
 .table-containers th:nth-of-type(4) {
     min-width: 200px;
 }
+
 .table-containers th:nth-of-type(5) {
     min-width: 100px;
 }
+
 .table-containers th:nth-of-type(6) {
     min-width: 100px;
 }
@@ -52,6 +56,15 @@
 .dropdown-menu {
     transform: translate(-100px, 0px) !important;
 }
+
 .dropdown-toggle::after {
     display: none;
+}
+
+/* Detail */
+.log-container {
+    white-space: pre;
+    overflow-y: auto;
+    overflow-x: auto;
+    height: calc(70vh - 110px);
 }
