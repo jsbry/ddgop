@@ -1,29 +1,30 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { GoLogsContainer, GoInspectContainer } from "../../../wailsjs/go/main/App";
+import JsonView from '@uiw/react-json-view';
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
   const { id, setID } = props;
   const [tab, setTab] = useState<string>("Logs")
   const [logs, setLogs] = useState<string[]>([]);
   const [inspect, setInspect] = useState<string>("");
+  const logRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
-    detailContainer();
+    detailContainer(id, tab);
 
     const interval = setInterval(() => {
-      detailContainer();
+      detailContainer(id, tab);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [id, tab]);
 
-  const detailContainer = () => {
+  const detailContainer = (id: string, tab: string) => {
     switch (tab) {
       case "Logs":
         const resultLogs = GoLogsContainer(id);
         resultLogs.then((d) => {
           console.log(d);
-
           if (d.error != null) {
             throw new Error(d.error);
           }
@@ -31,51 +32,78 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           d.logs.forEach((log) => {
             rows.push(log);
           });
-          setLogs(rows);
-        }).catch((err) => {
-          console.log(err);
-        });
-        break;
-
-      case "Inspect":
-        const resultInspect = GoInspectContainer(id);
-        resultInspect.then((d) => {
-          console.log(d);
-          if (d.error != null) {
-            throw new Error(d.error);
+          console.log(JSON.stringify(logs) != JSON.stringify(rows));
+          if (JSON.stringify(logs) != JSON.stringify(rows)) {
+            setLogs(rows);
           }
-          setInspect(d.inspect);
         }).catch((err) => {
           console.log(err);
         });
         break;
     }
+  };
+
+  const inspectContainer = (id: string) => {
+    const resultInspect = GoInspectContainer(id);
+    resultInspect.then((d) => {
+      console.log(d);
+      if (d.error != null) {
+        throw new Error(d.error);
+      }
+      setInspect(d.inspect);
+    }).catch((err) => {
+      console.log(err);
+    });
+  };
+
+  const resetDetail = () => {
+    setID("");
+    setTab("");
   };
 
   const renderTab = (tab: string) => {
     switch (tab) {
       case "Logs":
-        return <RenderLogs></RenderLogs>
+        return <RenderLogsTab></RenderLogsTab>
       case "Inspect":
-        return <RenderInspect></RenderInspect>
+        return <RenderInspectTab></RenderInspectTab>
     }
+  };
+
+  const RenderLogsTab = () => {
+    return (
+      <>
+        <pre className="log-container p-2 bg-light" ref={logRef}>
+          <RenderLogs></RenderLogs>
+        </pre>
+        <div className="form-check form-switch">
+          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" />
+          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Default switch checkbox input</label>
+        </div>
+      </>
+    )
   };
 
   const RenderLogs = useCallback(() => {
     return (
-      <pre className="log-container p-2 bg-light">
+      <>
         {logs.join("\n")}
-      </pre>
+      </>
     )
-  }, []);
+  }, [logs])
 
-  const RenderInspect = useCallback(() => {
+  const RenderInspectTab = useCallback(() => {
+    inspectContainer(id);
+    if (inspect == "") {
+      return <></>
+    }
+    const v = JSON.parse(inspect);
     return (
-      <pre className="log-container p-2 bg-light">
-        {inspect}
-      </pre>
+      <div className="log-container p-2 bg-light">
+        <JsonView value={v} displayDataTypes={false}></JsonView>
+      </div>
     )
-  }, []);
+  }, [inspect]);
 
   return (
     <div>
@@ -83,7 +111,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         <div className="col-12">
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
-              <li className="breadcrumb-item"><a href="#" onClick={() => setID("")}>Containers</a></li>
+              <li className="breadcrumb-item"><a href="#" onClick={() => resetDetail()}>Containers</a></li>
               <li className="breadcrumb-item active" aria-current="page">{ }</li>
             </ol>
           </nav>
