@@ -7,10 +7,12 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [tab, setTab] = useState<string>("Logs")
   const [logs, setLogs] = useState<string[]>([]);
   const [inspect, setInspect] = useState<string>("");
+  const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     detailContainer(id, tab);
+    inspectContainer(id);
 
     const interval = setInterval(() => {
       detailContainer(id, tab);
@@ -51,6 +53,11 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         throw new Error(d.error);
       }
       setInspect(d.inspect);
+      
+      const v = JSON.parse(inspect);
+      if (v.Name) {
+        setName(v.Name.slice(1));
+      }
     }).catch((err) => {
       console.log(err);
     });
@@ -112,7 +119,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           <nav aria-label="breadcrumb">
             <ol className="breadcrumb">
               <li className="breadcrumb-item"><a href="#" onClick={() => resetDetail()}>Containers</a></li>
-              <li className="breadcrumb-item active" aria-current="page">{ }</li>
+              <li className="breadcrumb-item active" aria-current="page">{name}</li>
             </ol>
           </nav>
         </div>
