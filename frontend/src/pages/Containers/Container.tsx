@@ -9,21 +9,31 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [inspect, setInspect] = useState<string>("");
   const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
+  const [autoReload, setAutoReload] = useState<boolean>(true);
 
   useEffect(() => {
-    detailContainer(id, tab);
+    detailContainer(logs, id, tab, autoReload);
     inspectContainer(id);
 
     const interval = setInterval(() => {
-      detailContainer(id, tab);
+      detailContainer(logs, id, tab, autoReload);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [id, tab]);
+  }, [id, tab, autoReload]);
 
-  const detailContainer = (id: string, tab: string) => {
+  useEffect(() => {
+    if (logRef.current) {
+      logRef.current.scrollTop = logRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  const detailContainer = (logs: string[], id: string, tab: string, autoReload: boolean) => {
     switch (tab) {
       case "Logs":
+        if (!autoReload) {
+          return;
+        }
         const resultLogs = GoLogsContainer(id);
         resultLogs.then((d) => {
           console.log(d);
@@ -34,7 +44,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           d.logs.forEach((log) => {
             rows.push(log);
           });
-          console.log(JSON.stringify(logs) != JSON.stringify(rows));
           if (JSON.stringify(logs) != JSON.stringify(rows)) {
             setLogs(rows);
           }
@@ -53,8 +62,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         throw new Error(d.error);
       }
       setInspect(d.inspect);
-      
-      const v = JSON.parse(inspect);
+
+      const v = JSON.parse(d.inspect);
       if (v.Name) {
         setName(v.Name.slice(1));
       }
@@ -84,8 +93,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           <RenderLogs></RenderLogs>
         </pre>
         <div className="form-check form-switch">
-          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" />
-          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">Default switch checkbox input</label>
+          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" checked={autoReload} onChange={() => setAutoReload(!autoReload)} />
+          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">auto reload</label>
         </div>
       </>
     )
