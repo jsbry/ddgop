@@ -142,6 +142,20 @@ export namespace main {
 	        this.error = source["error"];
 	    }
 	}
+	export class rFilesContainer {
+	    files: string;
+	    error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rFilesContainer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.files = source["files"];
+	        this.error = source["error"];
+	    }
+	}
 	export class rInspectContainer {
 	    inspect: string;
 	    error?: string;

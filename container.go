@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -12,7 +15,7 @@ type rStartContainer struct {
 
 func (a *App) GoStartContainer(containerID string) rStartContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker start %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container start %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -32,7 +35,7 @@ type rStopContainer struct {
 
 func (a *App) GoStopContainer(containerID string) rStopContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker stop %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container stop %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -52,7 +55,7 @@ type rDeleteContainer struct {
 
 func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker rm -f %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container rm -f %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -72,7 +75,7 @@ type rPauseContainer struct {
 
 func (a *App) GoPauseContainer(containerID string) rPauseContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker pause %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container pause %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -92,7 +95,7 @@ type rUnpauseContainer struct {
 
 func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker unpause %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container unpause %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -112,7 +115,7 @@ type rRestartContainer struct {
 
 func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker restart %s", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container restart %s", containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -177,5 +180,98 @@ func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 	return rInspectContainer{
 		Inspect: inspect,
 		Error:   getErrorNotice(errs),
+	}
+}
+
+type rFilesContainer struct {
+	Files string `json:"files"`
+	Error string `json:"error,omitempty"`
+}
+
+func (a *App) GoFilesContainer(containerID string) rFilesContainer {
+	var errs []error
+	cmd := genCmd(fmt.Sprintf("docker container exec %s find / -maxdepth 2 -type d -o -type f 2>/dev/null | sort", containerID))
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
+
+	lines := strings.Split(string(output), "\n")
+
+	idCounter = 0
+	tree := buildTree(lines)
+	filesJson, err := json.Marshal(tree)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("json.Marshal err: %s", err.Error()))
+	}
+
+	return rFilesContainer{
+		Files: string(filesJson),
+		Error: getErrorNotice(errs),
+	}
+}
+
+type Node struct {
+	Name  string  `json:"name"`
+	ID    int     `json:"id"`
+	Child []*Node `json:"child"`
+}
+
+var idCounter int
+
+func generateID() int {
+	idCounter++
+	return idCounter
+}
+
+func buildTree(paths []string) *Node {
+	root := &Node{
+		Name:  "/",
+		ID:    generateID(),
+		Child: []*Node{},
+	}
+	pathMap := map[string]*Node{
+		"/": root,
+	}
+
+	for _, path := range paths {
+		if path == "/" {
+			continue
+		}
+		cleanPath := strings.TrimSuffix(path, "/")
+		parts := strings.Split(strings.TrimPrefix(cleanPath, "/"), "/")
+
+		currentPath := "/"
+		parent := pathMap[currentPath]
+
+		for _, part := range parts {
+			currentPath = filepath.Join(currentPath, part)
+
+			child, exists := pathMap[currentPath]
+			if !exists {
+				child = &Node{
+					Name:  part,
+					ID:    generateID(),
+					Child: []*Node{},
+				}
+				parent.Child = append(parent.Child, child)
+				pathMap[currentPath] = child
+			}
+
+			parent = child
+		}
+	}
+
+	sortTree(root)
+	return root
+}
+
+func sortTree(node *Node) {
+	sort.Slice(node.Child, func(i, j int) bool {
+		return node.Child[i].Name < node.Child[j].Name
+	})
+	for _, child := range node.Child {
+		sortTree(child)
 	}
 }

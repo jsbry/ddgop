@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { GoLogsContainer, GoInspectContainer } from "../../../wailsjs/go/main/App";
+import { GoLogsContainer, GoInspectContainer, GoFilesContainer } from "../../../wailsjs/go/main/App";
 import JsonView from '@uiw/react-json-view';
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
@@ -9,18 +9,19 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [inspect, setInspect] = useState<string>("");
   const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
-  const [autoReload, setAutoReload] = useState<boolean>(true);
+  const [autoRefreshLog, setAutoRefreshLog] = useState<boolean>(true);
+  const [files, setFiles] = useState<string>("");
 
   useEffect(() => {
-    detailContainer(logs, id, tab, autoReload);
+    detailContainer(logs, id, tab, autoRefreshLog);
     inspectContainer(id);
 
     const interval = setInterval(() => {
-      detailContainer(logs, id, tab, autoReload);
+      detailContainer(logs, id, tab, autoRefreshLog);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [id, tab, autoReload]);
+  }, [id, tab, autoRefreshLog]);
 
   useEffect(() => {
     if (logRef.current) {
@@ -28,10 +29,10 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     }
   }, [logs]);
 
-  const detailContainer = (logs: string[], id: string, tab: string, autoReload: boolean) => {
+  const detailContainer = (logs: string[], id: string, tab: string, autoRefreshLog: boolean) => {
     switch (tab) {
       case "Logs":
-        if (!autoReload) {
+        if (!autoRefreshLog) {
           return;
         }
         const resultLogs = GoLogsContainer(id);
@@ -51,6 +52,17 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           console.log(err);
         });
         break;
+      case "Files":
+        const resultFiles = GoFilesContainer(id);
+        resultFiles.then((d) => {
+          console.log(d);
+          if (d.error != null) {
+            throw new Error(d.error);
+          }
+          setFiles(d.files);
+        }).catch((err) => {
+          console.log(err)
+        })
     }
   };
 
@@ -83,6 +95,10 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         return <RenderLogsTab></RenderLogsTab>
       case "Inspect":
         return <RenderInspectTab></RenderInspectTab>
+      case "Exec":
+        return <RenderExecTab></RenderExecTab>
+      case "Files":
+        return <RenderFilesTab></RenderFilesTab>
     }
   };
 
@@ -93,8 +109,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           <RenderLogs></RenderLogs>
         </pre>
         <div className="form-check form-switch">
-          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" checked={autoReload} onChange={() => setAutoReload(!autoReload)} />
-          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">auto reload</label>
+          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" checked={autoRefreshLog} onChange={() => setAutoRefreshLog(!autoRefreshLog)} />
+          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">auto refresh</label>
         </div>
       </>
     )
@@ -121,6 +137,22 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     )
   }, [inspect]);
 
+  const RenderExecTab = useCallback(() => {
+    return (
+      <div className="p-2 bg-light">
+        <code>docker exec -it {id.slice(0, 12)} /bin/bash</code>
+      </div>
+    )
+  }, []);
+
+  const RenderFilesTab = useCallback(() => {
+    return (
+      <div className="log-container p-2 bg-light">
+        <p>{files}</p>
+      </div>
+    )
+  }, [files]);
+
   return (
     <div>
       <div className="row">
@@ -140,6 +172,12 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
             </li>
             <li className="nav-item">
               <a className={`nav-link ${tab == "Inspect" ? "active" : ""}`} href="#" onClick={() => setTab("Inspect")}>Inspect</a>
+            </li>
+            <li className="nav-item">
+              <a className={`nav-link ${tab == "Exec" ? "active" : ""}`} href="#" onClick={() => setTab("Exec")}>Exec</a>
+            </li>
+            <li className="nav-item">
+              <a className={`nav-link ${tab == "Files" ? "active" : ""}`} href="#" onClick={() => setTab("Files")}>Files</a>
             </li>
           </ul>
         </div>
