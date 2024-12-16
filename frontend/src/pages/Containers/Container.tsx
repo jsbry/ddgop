@@ -1,5 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { GoLogsContainer, GoInspectContainer, GoFilesContainer } from "../../../wailsjs/go/main/App";
+import { createColumnHelper, useReactTable, flexRender, CellContext, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
+import { FaAngleRight, FaAngleDown } from "react-icons/fa6";
 import JsonView from '@uiw/react-json-view';
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
@@ -10,7 +12,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
   const [autoRefreshLog, setAutoRefreshLog] = useState<boolean>(true);
-  const [files, setFiles] = useState<string>("");
+  const [files, setFiles] = useState<TableCol[]>([]);
+  const [expanded, setExpanded] = useState<ExpandedState>({})
 
   useEffect(() => {
     detailContainer(logs, id, tab, autoRefreshLog);
@@ -28,6 +31,69 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [logs]);
+
+
+  type TableCol = {
+    name: string;
+    size: string;
+    lastModified: string;
+    mode: string;
+    subRows?: TableCol[];
+  };
+
+  const columnHelper = createColumnHelper<TableCol>();
+
+  const renderName = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const name = row.original.name;
+    if (row.getCanExpand()) {
+      return (
+        <>
+          <button
+            {...{
+              onClick: row.getToggleExpandedHandler(),
+              style: { cursor: 'pointer' },
+            }}
+          >
+            {row.getIsExpanded() ? <FaAngleDown></FaAngleDown> : <FaAngleRight></FaAngleRight>}
+          </button>
+          {name}
+        </>
+      )
+    }
+    return <>{name}</>
+  }, []);
+
+  const tableColumnDefs = [
+    columnHelper.accessor((row) => row.name, {
+      id: 'name',
+      header: 'Name',
+      cell: renderName,
+    }),
+    columnHelper.accessor((row) => row.size, {
+      id: 'size',
+      header: 'Size',
+    }),
+    columnHelper.accessor((row) => row.lastModified, {
+      id: 'last-modified',
+      header: 'LastModified',
+    }),
+    columnHelper.accessor((row) => row.mode, {
+      id: 'mode',
+      header: 'Mode',
+    }),
+  ];
+
+  const table = useReactTable<TableCol>({
+    columns: tableColumnDefs,
+    data: files,
+    state: {
+      expanded,
+    },
+    getSubRows: (row) => row.subRows,
+    onExpandedChange: setExpanded,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  });
 
   const detailContainer = (logs: string[], id: string, tab: string, autoRefreshLog: boolean) => {
     switch (tab) {
@@ -53,16 +119,22 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         });
         break;
       case "Files":
-        const resultFiles = GoFilesContainer(id);
-        resultFiles.then((d) => {
-          console.log(d);
-          if (d.error != null) {
-            throw new Error(d.error);
-          }
-          setFiles(d.files);
-        }).catch((err) => {
-          console.log(err)
-        })
+        const d: TableCol[] = [
+          { name: "aa0", mode: "mode0", lastModified: "lastModified0", size: "size0" },
+          { name: "aa1", mode: "mode1", lastModified: "lastModified1", size: "size1"},
+          { name: "aa2", mode: "mode2", lastModified: "lastModified2", size: "size2", subRows: [{ name: "aa3", mode: "mode3", lastModified: "lastModified3", size: "size3"}]},
+        ];
+        setFiles(d);
+      // const resultFiles = GoFilesContainer(id);
+      // resultFiles.then((d) => {
+      //   console.log(d);
+      //   if (d.error != null) {
+      //     throw new Error(d.error);
+      //   }
+      //   setFiles(d.files);
+      // }).catch((err) => {
+      //   console.log(err)
+      // });
     }
   };
 
@@ -147,11 +219,38 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
 
   const RenderFilesTab = useCallback(() => {
     return (
-      <div className="log-container p-2 bg-light">
-        <p>{files}</p>
+      <div className="table-area table-containers overflow-auto pt-2">
+        <table className="table table-hover table-responsive-lg table-sm">
+          <thead className="sticky-top">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th key={header.id} colSpan={header.colSpan}>
+                    {flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody className="table-group-divider small">
+            {table.getRowModel().rows.map((row, index) => {
+              return (
+                <tr key={index}>
+                  {row.getVisibleCells().map((cell) => {
+                    return (
+                      <td key={cell.column.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     )
-  }, [files]);
+  }, [table]);
 
   return (
     <div>
