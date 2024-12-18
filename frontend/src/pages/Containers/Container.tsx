@@ -17,12 +17,14 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
   useEffect(() => {
-    logContainer(logs, id, tab, autoRefreshLog);
+    logContainer(logs, id, autoRefreshLog);
     inspectContainer(id);
     filesContainer(id);
 
     const interval = setInterval(() => {
-      logContainer(logs, id, tab, autoRefreshLog);
+      if (tab == "Logs") {
+        logContainer(logs, id, autoRefreshLog);
+      }
     }, 1000);
 
     return () => clearInterval(interval);
@@ -32,7 +34,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, [logs, logRef]);
 
 
   type TableCol = {
@@ -146,6 +148,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     }).catch((err) => {
       console.log(err)
     });
+    // row.getToggleExpandedHandler()();
   }, [files]);
 
   const createSubRows = (files: TableCol[], path: string, rows: TableCol[]) => {
@@ -197,30 +200,26 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     getExpandedRowModel: getExpandedRowModel(),
   });
 
-  const logContainer = (logs: string[], id: string, tab: string, autoRefreshLog: boolean) => {
-    switch (tab) {
-      case "Logs":
-        if (!autoRefreshLog) {
-          return;
-        }
-        const resultLogs = GoLogsContainer(id);
-        resultLogs.then((d) => {
-          console.log(d);
-          if (d.Error != null) {
-            throw new Error(d.Error);
-          }
-          let rows: string[] = [];
-          d.Logs.forEach((log) => {
-            rows.push(log);
-          });
-          if (JSON.stringify(logs) != JSON.stringify(rows)) {
-            setLogs(rows);
-          }
-        }).catch((err) => {
-          console.log(err);
-        });
-        break;
+  const logContainer = (logs: string[], id: string, autoRefreshLog: boolean) => {
+    if (!autoRefreshLog) {
+      return;
     }
+    const resultLogs = GoLogsContainer(id);
+    resultLogs.then((d) => {
+      console.log(d);
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+      let rows: string[] = [];
+      d.Logs.forEach((log) => {
+        rows.push(log);
+      });
+      if (JSON.stringify(logs) != JSON.stringify(rows)) {
+        setLogs(rows);
+      }
+    }).catch((err) => {
+      console.log(err);
+    });
   };
 
   const inspectContainer = (id: string) => {

@@ -168,7 +168,7 @@ func (a *App) GoStatsContainer() rContainerStats {
 		// CPU
 		match := cpuUsageReg.FindStringSubmatch(container.CPUPerc)
 		if len(match) < 3 {
-			errs = append(errs, fmt.Errorf("match len < 3: %#v", container.CPUPerc))
+			errs = append(errs, fmt.Errorf("cpu match len < 3: %#v", container.CPUPerc))
 			continue
 		}
 		value, err := strconv.ParseFloat(match[1], 64)
@@ -181,7 +181,7 @@ func (a *App) GoStatsContainer() rContainerStats {
 		// Memory
 		match = memUsageReg.FindStringSubmatch(container.MemUsage)
 		if len(match) < 4 {
-			errs = append(errs, fmt.Errorf("match len < 4: %s", container.MemUsage))
+			errs = append(errs, fmt.Errorf("memory usage match len < 4: %s", container.MemUsage))
 			continue
 		}
 		value, err = strconv.ParseFloat(match[1], 64)
@@ -196,7 +196,14 @@ func (a *App) GoStatsContainer() rContainerStats {
 			errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
 		}
 		match = memUsageTotalReg.FindStringSubmatch(container.MemUsage)
-		stats.MemLimit = fmt.Sprintf("%s %s", match[1], match[3])
+		if len(match) < 4 {
+			errs = append(errs, fmt.Errorf("memory total match len < 4: %s", container.MemUsage))
+			continue
+		}
+		memLimit := fmt.Sprintf("%s %s", match[1], match[3])
+		if memLimit != "0 B" {
+			stats.MemLimit = memLimit
+		}
 
 		containers = append(containers, container)
 	}
