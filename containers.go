@@ -10,19 +10,19 @@ import (
 )
 
 type rContainers struct {
-	Containers []Container `json:"containers"`
-	Error      string      `json:"error,omitempty"`
+	Containers []Container `json:"Containers"`
+	Error      string      `json:"Error,omitempty"`
 }
 
 type Container struct {
-	ContainerID string   `json:"container_id"`
-	Image       string   `json:"image"`
-	Command     string   `json:"command"`
-	Created     string   `json:"created"`
-	Status      string   `json:"status"`
-	Ports       []string `json:"ports"`
-	Name        string   `json:"name"`
-	State       string   `json:"state"`
+	ContainerID string   `json:"ContainerID"`
+	Image       string   `json:"Image"`
+	Command     string   `json:"Command"`
+	Created     string   `json:"Created"`
+	Status      string   `json:"Status"`
+	Ports       []string `json:"Ports"`
+	Name        string   `json:"Name"`
+	State       string   `json:"State"`
 }
 
 type ContainerJSON struct {
@@ -93,23 +93,23 @@ func (a *App) GoContainers() rContainers {
 }
 
 type rContainerStats struct {
-	Stats          Stats            `json:"stats"`
-	ContainerStats []ContainerStats `json:"container_stats"`
-	Error          string           `json:"error,omitempty"`
+	Stats          Stats            `json:"Stats"`
+	ContainerStats []ContainerStats `json:"ContainerStats"`
+	Error          string           `json:"Error,omitempty"`
 }
 
 type ContainerStats struct {
-	ContainerID string `json:"container_id"`
-	CPUPerc     string `json:"cpu_perc"`
-	MemPerc     string `json:"mem_perc"`
-	MemUsage    string `json:"mem_usage"`
+	ContainerID string `json:"ContainerID"`
+	CPUPerc     string `json:"CPUPerc"`
+	MemPerc     string `json:"MemPerc"`
+	MemUsage    string `json:"MemUsage"`
 }
 
 type Stats struct {
-	CPUUsage string `json:"cpu_usage"`
-	CPULimit string `json:"cpu_limit"`
-	MemUsage string `json:"mem_usage"`
-	MemLimit string `json:"mem_limit"`
+	CPUUsage string `json:"CPUUsage"`
+	CPULimit string `json:"CPULimit"`
+	MemUsage string `json:"MemUsage"`
+	MemLimit string `json:"MemLimit"`
 }
 
 type ContainerStatsJSON struct {

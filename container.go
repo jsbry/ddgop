@@ -1,16 +1,16 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"path/filepath"
-	"sort"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 )
 
 type rStartContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoStartContainer(containerID string) rStartContainer {
@@ -29,8 +29,8 @@ func (a *App) GoStartContainer(containerID string) rStartContainer {
 }
 
 type rStopContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoStopContainer(containerID string) rStopContainer {
@@ -49,8 +49,8 @@ func (a *App) GoStopContainer(containerID string) rStopContainer {
 }
 
 type rDeleteContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
@@ -69,8 +69,8 @@ func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
 }
 
 type rPauseContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoPauseContainer(containerID string) rPauseContainer {
@@ -89,8 +89,8 @@ func (a *App) GoPauseContainer(containerID string) rPauseContainer {
 }
 
 type rUnpauseContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
@@ -109,8 +109,8 @@ func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
 }
 
 type rRestartContainer struct {
-	ContainerID string `json:"container_id"`
-	Error       string `json:"error,omitempty"`
+	ContainerID string `json:"ContainerID"`
+	Error       string `json:"Error,omitempty"`
 }
 
 func (a *App) GoRestartContainer(containerID string) rRestartContainer {
@@ -129,8 +129,8 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 }
 
 type rLogsContainer struct {
-	Logs  []string `json:"logs"`
-	Error string   `json:"error,omitempty"`
+	Logs  []string `json:"Logs"`
+	Error string   `json:"Error,omitempty"`
 }
 
 func (a *App) GoLogsContainer(containerID string) rLogsContainer {
@@ -155,8 +155,8 @@ func (a *App) GoLogsContainer(containerID string) rLogsContainer {
 }
 
 type rInspectContainer struct {
-	Inspect string `json:"inspect"`
-	Error   string `json:"error,omitempty"`
+	Inspect string `json:"Inspect"`
+	Error   string `json:"Error,omitempty"`
 }
 
 func (a *App) GoInspectContainer(containerID string) rInspectContainer {
@@ -184,94 +184,102 @@ func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 }
 
 type rFilesContainer struct {
-	Files string `json:"files"`
-	Error string `json:"error,omitempty"`
+	Files []File `json:"Files"`
+	Error string `json:"Error,omitempty"`
 }
 
-func (a *App) GoFilesContainer(containerID string) rFilesContainer {
+type File struct {
+	Mode         string `json:"Mode"`
+	Links        int    `json:"Links"`
+	Owner        string `json:"Owner"`
+	Group        string `json:"Group"`
+	Size         string `json:"Size"`
+	ModifiedAt   string `json:"ModifiedAt"`
+	Name         string `json:"Name"`
+	AbsolutePath string `json:"AbsolutePath"`
+	IsDir        bool   `json:"IsDir"`
+	SubFiles     []File `json:"SubFiles"`
+}
+
+var lsReg = regexp.MustCompile(`^([d\-l][rwx\-]{9})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(.+)$`)
+
+func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container exec %s find / -maxdepth 2 -type d -o -type f 2>/dev/null | sort", containerID))
+	cmd := genCmd(fmt.Sprintf("docker container exec %s ls -la --time-style=\"+%%Y-%%m-%%d %%H:%%M:%%S\" %s", containerID, filepath))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
 	}
 	writeBytes("output.log", output)
 
+	var files []File
 	lines := strings.Split(string(output), "\n")
+	for _, line := range lines[1:] {
+		if line == "" {
+			continue
+		}
 
-	idCounter = 0
-	tree := buildTree(lines)
-	filesJson, err := json.Marshal(tree)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("json.Marshal err: %s", err.Error()))
+		matches := lsReg.FindStringSubmatch(line)
+		if len(matches) != 8 {
+			continue
+		}
+
+		if slices.Contains([]string{".", ".."}, matches[7]) {
+			continue
+		}
+
+		isDir := matches[1][0] == 'd'
+
+		links, err := strconv.Atoi(matches[2])
+		if err != nil {
+			errs = append(errs, fmt.Errorf("links strconv.Atoi err: %s", err.Error()))
+			continue
+		}
+
+		size, err := strconv.ParseFloat(matches[5], 64)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("size strconv.ParseInt err: %s", err.Error()))
+			continue
+		}
+
+		name := pathClean(matches[7])
+		if isDir {
+			name += "/"
+		}
+
+		absolutePath := pathClean(strings.Join([]string{filepath, matches[7]}, "/"))
+		if isDir {
+			absolutePath += "/"
+		}
+
+		f := File{
+			Mode:         matches[1],
+			Links:        links,
+			Owner:        matches[3],
+			Group:        matches[4],
+			Size:         formatSize(size),
+			ModifiedAt:   matches[6],
+			Name:         name,
+			AbsolutePath: absolutePath,
+			IsDir:        isDir,
+		}
+		files = append(files, f)
 	}
 
+	if len(files) == 0 {
+		files = append(files, File{
+			Name:         "",
+			AbsolutePath: filepath,
+		})
+	}
 	return rFilesContainer{
-		Files: string(filesJson),
+		Files: files,
 		Error: getErrorNotice(errs),
 	}
 }
 
-type Node struct {
-	Name  string  `json:"name"`
-	ID    int     `json:"id"`
-	Child []*Node `json:"child"`
-}
+var pathCleanReg = regexp.MustCompile(`/+`)
 
-var idCounter int
-
-func generateID() int {
-	idCounter++
-	return idCounter
-}
-
-func buildTree(paths []string) *Node {
-	root := &Node{
-		Name:  "/",
-		ID:    generateID(),
-		Child: []*Node{},
-	}
-	pathMap := map[string]*Node{
-		"/": root,
-	}
-
-	for _, path := range paths {
-		if path == "/" {
-			continue
-		}
-		cleanPath := strings.TrimSuffix(path, "/")
-		parts := strings.Split(strings.TrimPrefix(cleanPath, "/"), "/")
-
-		currentPath := "/"
-		parent := pathMap[currentPath]
-
-		for _, part := range parts {
-			currentPath = filepath.Join(currentPath, part)
-
-			child, exists := pathMap[currentPath]
-			if !exists {
-				child = &Node{
-					Name:  part,
-					ID:    generateID(),
-					Child: []*Node{},
-				}
-				parent.Child = append(parent.Child, child)
-				pathMap[currentPath] = child
-			}
-
-			parent = child
-		}
-	}
-
-	sortTree(root)
-	return root
-}
-
-func sortTree(node *Node) {
-	sort.Slice(node.Child, func(i, j int) bool {
-		return node.Child[i].Name < node.Child[j].Name
-	})
-	for _, child := range node.Child {
-		sortTree(child)
-	}
+func pathClean(s string) string {
+	return pathCleanReg.ReplaceAllString(s, "/")
 }

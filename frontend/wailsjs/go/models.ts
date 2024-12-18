@@ -1,14 +1,14 @@
 export namespace main {
 	
 	export class Container {
-	    container_id: string;
-	    image: string;
-	    command: string;
-	    created: string;
-	    status: string;
-	    ports: string[];
-	    name: string;
-	    state: string;
+	    ContainerID: string;
+	    Image: string;
+	    Command: string;
+	    Created: string;
+	    Status: string;
+	    Ports: string[];
+	    Name: string;
+	    State: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Container(source);
@@ -16,21 +16,21 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.image = source["image"];
-	        this.command = source["command"];
-	        this.created = source["created"];
-	        this.status = source["status"];
-	        this.ports = source["ports"];
-	        this.name = source["name"];
-	        this.state = source["state"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Image = source["Image"];
+	        this.Command = source["Command"];
+	        this.Created = source["Created"];
+	        this.Status = source["Status"];
+	        this.Ports = source["Ports"];
+	        this.Name = source["Name"];
+	        this.State = source["State"];
 	    }
 	}
 	export class ContainerStats {
-	    container_id: string;
-	    cpu_perc: string;
-	    mem_perc: string;
-	    mem_usage: string;
+	    ContainerID: string;
+	    CPUPerc: string;
+	    MemPerc: string;
+	    MemUsage: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new ContainerStats(source);
@@ -38,17 +38,65 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.cpu_perc = source["cpu_perc"];
-	        this.mem_perc = source["mem_perc"];
-	        this.mem_usage = source["mem_usage"];
+	        this.ContainerID = source["ContainerID"];
+	        this.CPUPerc = source["CPUPerc"];
+	        this.MemPerc = source["MemPerc"];
+	        this.MemUsage = source["MemUsage"];
 	    }
 	}
+	export class File {
+	    Mode: string;
+	    Links: number;
+	    Owner: string;
+	    Group: string;
+	    Size: string;
+	    ModifiedAt: string;
+	    Name: string;
+	    AbsolutePath: string;
+	    IsDir: boolean;
+	    SubFiles: File[];
+	
+	    static createFrom(source: any = {}) {
+	        return new File(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Mode = source["Mode"];
+	        this.Links = source["Links"];
+	        this.Owner = source["Owner"];
+	        this.Group = source["Group"];
+	        this.Size = source["Size"];
+	        this.ModifiedAt = source["ModifiedAt"];
+	        this.Name = source["Name"];
+	        this.AbsolutePath = source["AbsolutePath"];
+	        this.IsDir = source["IsDir"];
+	        this.SubFiles = this.convertValues(source["SubFiles"], File);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Stats {
-	    cpu_usage: string;
-	    cpu_limit: string;
-	    mem_usage: string;
-	    mem_limit: string;
+	    CPUUsage: string;
+	    CPULimit: string;
+	    MemUsage: string;
+	    MemLimit: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new Stats(source);
@@ -56,16 +104,16 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.cpu_usage = source["cpu_usage"];
-	        this.cpu_limit = source["cpu_limit"];
-	        this.mem_usage = source["mem_usage"];
-	        this.mem_limit = source["mem_limit"];
+	        this.CPUUsage = source["CPUUsage"];
+	        this.CPULimit = source["CPULimit"];
+	        this.MemUsage = source["MemUsage"];
+	        this.MemLimit = source["MemLimit"];
 	    }
 	}
 	export class rContainerStats {
-	    stats: Stats;
-	    container_stats: ContainerStats[];
-	    error?: string;
+	    Stats: Stats;
+	    ContainerStats: ContainerStats[];
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rContainerStats(source);
@@ -73,9 +121,9 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.stats = this.convertValues(source["stats"], Stats);
-	        this.container_stats = this.convertValues(source["container_stats"], ContainerStats);
-	        this.error = source["error"];
+	        this.Stats = this.convertValues(source["Stats"], Stats);
+	        this.ContainerStats = this.convertValues(source["ContainerStats"], ContainerStats);
+	        this.Error = source["Error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -97,8 +145,8 @@ export namespace main {
 		}
 	}
 	export class rContainers {
-	    containers: Container[];
-	    error?: string;
+	    Containers: Container[];
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rContainers(source);
@@ -106,8 +154,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.containers = this.convertValues(source["containers"], Container);
-	        this.error = source["error"];
+	        this.Containers = this.convertValues(source["Containers"], Container);
+	        this.Error = source["Error"];
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -129,8 +177,8 @@ export namespace main {
 		}
 	}
 	export class rDeleteContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rDeleteContainer(source);
@@ -138,13 +186,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rFilesContainer {
-	    files: string;
-	    error?: string;
+	    Files: File[];
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rFilesContainer(source);
@@ -152,13 +200,31 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.files = source["files"];
-	        this.error = source["error"];
+	        this.Files = this.convertValues(source["Files"], File);
+	        this.Error = source["Error"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class rInspectContainer {
-	    inspect: string;
-	    error?: string;
+	    Inspect: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rInspectContainer(source);
@@ -166,13 +232,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.inspect = source["inspect"];
-	        this.error = source["error"];
+	        this.Inspect = source["Inspect"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rLogsContainer {
-	    logs: string[];
-	    error?: string;
+	    Logs: string[];
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rLogsContainer(source);
@@ -180,13 +246,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.logs = source["logs"];
-	        this.error = source["error"];
+	        this.Logs = source["Logs"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rPauseContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rPauseContainer(source);
@@ -194,13 +260,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rRestartContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rRestartContainer(source);
@@ -208,13 +274,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rStartContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rStartContainer(source);
@@ -222,13 +288,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rStopContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rStopContainer(source);
@@ -236,13 +302,13 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 	export class rUnpauseContainer {
-	    container_id: string;
-	    error?: string;
+	    ContainerID: string;
+	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new rUnpauseContainer(source);
@@ -250,8 +316,8 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.container_id = source["container_id"];
-	        this.error = source["error"];
+	        this.ContainerID = source["ContainerID"];
+	        this.Error = source["Error"];
 	    }
 	}
 

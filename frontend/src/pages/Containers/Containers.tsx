@@ -30,7 +30,7 @@ function Containers() {
   );
 
   type TableCol = {
-    container_id: string;
+    containerID: string;
     image: string;
     command: string;
     created: string;
@@ -104,7 +104,7 @@ function Containers() {
   }, []);
 
   const renderActions = useCallback(({ row }: CellContext<TableCol, unknown>) => {
-    const id = row.original.container_id;
+    const id = row.original.containerID;
     const state = row.original.state;
     const name = row.original.name;
     return (
@@ -140,7 +140,7 @@ function Containers() {
       id: 'name',
       header: 'Name',
     }),
-    columnHelper.accessor((row) => row.container_id, {
+    columnHelper.accessor((row) => row.containerID, {
       id: 'container_id',
       header: 'Container ID',
       cell: renderContainerID,
@@ -195,21 +195,21 @@ function Containers() {
 
     const result = GoContainers();
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
       console.log(d);
       let rows: TableCol[] = [];
-      d.containers.forEach((container) => {
+      d.Containers.forEach((container) => {
         const t: TableCol = {
-          container_id: container.container_id,
-          image: container.image,
-          command: container.command,
-          created: container.created,
-          status: container.status,
-          ports: container.ports,
-          name: container.name,
-          state: container.state,
+          containerID: container.ContainerID,
+          image: container.Image,
+          command: container.Command,
+          created: container.Created,
+          status: container.Status,
+          ports: container.Ports,
+          name: container.Name,
+          state: container.State,
         };
         rows.push(t);
       });
@@ -220,24 +220,24 @@ function Containers() {
 
     const stats = GoStatsContainer();
     stats.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
       console.log(d);
-      d.container_stats.forEach((container) => {
+      d.ContainerStats.forEach((container) => {
         // TODO s
         const s = {
-          container_id: container.container_id,
-          cpu_perc: container.cpu_perc,
-          mem_perc: container.mem_perc,
-          mem_usage: container.mem_usage,
+          container_id: container.ContainerID,
+          cpu_perc: container.CPUPerc,
+          mem_perc: container.MemPerc,
+          mem_usage: container.MemUsage,
         };
       });
 
-      setMemUsage(d.stats.mem_usage);
-      setMemLimit(d.stats.mem_limit);
-      setCPUUsage(d.stats.cpu_usage);
-      setCPULimit(d.stats.cpu_limit);
+      setMemUsage(d.Stats.MemUsage);
+      setMemLimit(d.Stats.MemLimit);
+      setCPUUsage(d.Stats.CPUUsage);
+      setCPULimit(d.Stats.CPULimit);
     }).catch((err) => {
       console.log(err);
     });
@@ -250,8 +250,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoStartContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
     }).catch((err) => {
       console.log(err);
@@ -268,8 +268,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoUnpauseContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
     }).catch((err) => {
       console.log(err);
@@ -286,8 +286,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoStopContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
       listContainer("")
     }).catch((err) => {
@@ -308,8 +308,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoPauseContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
     }).catch((err) => {
       console.log(err);
@@ -326,8 +326,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoRestartContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
     }).catch((err) => {
       console.log(err);
@@ -344,8 +344,8 @@ function Containers() {
     setInactiveBtn(true);
     const result = GoDeleteContainer(id);
     result.then((d) => {
-      if (d.error != null) {
-        throw new Error(d.error);
+      if (d.Error != null) {
+        throw new Error(d.Error);
       }
     }).catch((err) => {
       console.log(err);
