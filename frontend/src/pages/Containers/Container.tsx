@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { GoLogsContainer, GoInspectContainer, GoFilesContainer } from "../../../wailsjs/go/main/App";
-import { createColumnHelper, useReactTable, flexRender, CellContext, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
+import { GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer } from "../../../wailsjs/go/main/App";
+import { createColumnHelper, useReactTable, flexRender, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
 import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion } from "react-icons/fa6";
 import JsonView from '@uiw/react-json-view';
+import { EventsOn, EventsOff } from '../../../wailsjs/runtime'
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
   const { id, setID } = props;
@@ -12,30 +13,32 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
   const [autoRefreshLog, setAutoRefreshLog] = useState<boolean>(true);
+  const [execCmd, setExecCmd] = useState<string>("");
   const [files, setFiles] = useState<TableCol[]>([]);
   const [filePath, setFilePath] = useState<string>("/");
   const [expanded, setExpanded] = useState<ExpandedState>({})
 
   useEffect(() => {
-    logContainer(logs, id, autoRefreshLog);
+    GoLogsContainer(id);
+    EventsOn("log", (line: string) => {
+      setLogs((prevLogs) => [...prevLogs, line]);
+    });
+    return () => {
+      EventsOff("log");
+    };
+  }, [id]);
+
+  useEffect(() => {
     inspectContainer(id);
+    execContainer(id);
     filesContainer(id);
-
-    const interval = setInterval(() => {
-      if (tab == "Logs") {
-        logContainer(logs, id, autoRefreshLog);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [id, tab, autoRefreshLog]);
+  }, [id]);
 
   useEffect(() => {
     if (logRef.current) {
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [logs, logRef]);
-
 
   type TableCol = {
     name: string;
@@ -200,28 +203,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     getExpandedRowModel: getExpandedRowModel(),
   });
 
-  const logContainer = (logs: string[], id: string, autoRefreshLog: boolean) => {
-    if (!autoRefreshLog) {
-      return;
-    }
-    const resultLogs = GoLogsContainer(id);
-    resultLogs.then((d) => {
-      console.log(d);
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-      let rows: string[] = [];
-      d.Logs.forEach((log) => {
-        rows.push(log);
-      });
-      if (JSON.stringify(logs) != JSON.stringify(rows)) {
-        setLogs(rows);
-      }
-    }).catch((err) => {
-      console.log(err);
-    });
-  };
-
   const inspectContainer = (id: string) => {
     const resultInspect = GoInspectContainer(id);
     resultInspect.then((d) => {
@@ -235,6 +216,21 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       if (v.Name) {
         setName(v.Name.slice(1));
       }
+    }).catch((err) => {
+      console.log(err);
+    });
+  };
+
+  const execContainer = (id: string) => {
+    console.log("start execContainer");
+
+    const resultExec = GoExecContainer(id);
+    resultExec.then((d) => {
+      console.log(d);
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+      setExecCmd(d.Exec);
     }).catch((err) => {
       console.log(err);
     });
@@ -324,6 +320,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     return (
       <div className="p-2 bg-light">
         <code>docker exec -it {id.slice(0, 12)} /bin/bash</code>
+        <code>{execCmd}</code>
       </div>
     )
   }, []);

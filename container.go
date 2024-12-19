@@ -1,11 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type rStartContainer struct {
@@ -128,30 +131,26 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	}
 }
 
-type rLogsContainer struct {
-	Logs  []string `json:"Logs"`
-	Error string   `json:"Error,omitempty"`
-}
-
-func (a *App) GoLogsContainer(containerID string) rLogsContainer {
-	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container logs %s", containerID))
-	output, err := execCmd(cmd)
+func (a *App) GoLogsContainer(containerID string) {
+	cmd := genCmd(fmt.Sprintf("docker container logs %s --timestamps -f", containerID))
+	res, stdout, err := execCmdPipe(cmd)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
-	}
-	writeBytes("output.log", output)
-
-	logs := []string{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		logs = append(logs, line)
+		runtime.LogErrorf(a.ctx, "failed to get stdout: %v", err)
+		return
 	}
 
-	return rLogsContainer{
-		Logs:  logs,
-		Error: getErrorNotice(errs),
+	if err := res.Start(); err != nil {
+		runtime.LogErrorf(a.ctx, "failed to start command: %v", err)
+		return
 	}
+
+	scanner := bufio.NewScanner(stdout)
+	for scanner.Scan() {
+		line := scanner.Text()
+		runtime.EventsEmit(a.ctx, "log", line)
+	}
+
+	res.Wait()
 }
 
 type rInspectContainer struct {
@@ -180,6 +179,55 @@ func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 	return rInspectContainer{
 		Inspect: inspect,
 		Error:   getErrorNotice(errs),
+	}
+}
+
+type rExecContainer struct {
+	Exec  string `json:"Exec"`
+	Error string `json:"Error,omitempty"`
+}
+
+func (a *App) GoExecContainer(containerID string) rExecContainer {
+	var errs []error
+	exec := fmt.Sprintf("docker container exec -it %s /bin/bash", containerID[:12])
+	cmd := genCmd(exec)
+	res, stdout, err := execCmdPipe(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmdPipe err: %s", err.Error()))
+	} else {
+		if err := res.Start(); err != nil {
+			errs = append(errs, fmt.Errorf("failed to start command: %s", err.Error()))
+		}
+	}
+
+	errs = append(errs, fmt.Errorf("failed to start command: %s", "err.Error()"))
+	if len(errs) > 0 {
+		errs = []error{}
+		exec = fmt.Sprintf("docker container exec -it %s /bin/sh", containerID)
+		cmd = genCmd(exec)
+		res, stdout, err = execCmdPipe(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmdPipe err: %s", err.Error()))
+		} else {
+			if err := res.Start(); err != nil {
+				errs = append(errs, fmt.Errorf("failed to start command: %s", err.Error()))
+			}
+		}
+	}
+
+	if len(errs) > 0 {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			runtime.EventsEmit(a.ctx, "exec", line)
+		}
+
+		res.Wait()
+	}
+
+	return rExecContainer{
+		Exec:  exec,
+		Error: getErrorNotice(errs),
 	}
 }
 

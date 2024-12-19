@@ -190,6 +190,20 @@ export namespace main {
 	        this.Error = source["Error"];
 	    }
 	}
+	export class rExecContainer {
+	    Exec: string;
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rExecContainer(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Exec = source["Exec"];
+	        this.Error = source["Error"];
+	    }
+	}
 	export class rFilesContainer {
 	    Files: File[];
 	    Error?: string;
@@ -233,20 +247,6 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Inspect = source["Inspect"];
-	        this.Error = source["Error"];
-	    }
-	}
-	export class rLogsContainer {
-	    Logs: string[];
-	    Error?: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new rLogsContainer(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.Logs = source["Logs"];
 	        this.Error = source["Error"];
 	    }
 	}
