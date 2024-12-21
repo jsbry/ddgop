@@ -192,6 +192,7 @@ export namespace main {
 	}
 	export class rExecContainer {
 	    Exec: string;
+	    Command: string;
 	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -201,6 +202,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Exec = source["Exec"];
+	        this.Command = source["Command"];
 	        this.Error = source["Error"];
 	    }
 	}

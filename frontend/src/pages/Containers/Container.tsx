@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer } from "../../../wailsjs/go/main/App";
+import { GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, useReactTable, flexRender, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
-import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion } from "react-icons/fa6";
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion, FaStop, FaPlay, FaArrowRotateRight, FaRegCopy } from "react-icons/fa6";
 import JsonView from '@uiw/react-json-view';
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime'
+import * as h from './helper';
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
   const { id, setID } = props;
@@ -17,6 +19,15 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [files, setFiles] = useState<TableCol[]>([]);
   const [filePath, setFilePath] = useState<string>("/");
   const [expanded, setExpanded] = useState<ExpandedState>({})
+  const [state, setState] = useState<string>("");
+  const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
+  const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
+  const [image, setImage] = useState<string>("");
+
+  useEffect(() => {
+    execContainer(image);
+    inspectContainer(id);
+  }, []);
 
   useEffect(() => {
     GoLogsContainer(id);
@@ -29,10 +40,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   }, [id]);
 
   useEffect(() => {
-    inspectContainer(id);
-    execContainer(id);
-    filesContainer(id);
-  }, [id]);
+    filesContainer(id, state);
+  }, [id, state]);
 
   useEffect(() => {
     if (logRef.current) {
@@ -152,7 +161,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       console.log(err)
     });
     // row.getToggleExpandedHandler()();
-  }, [files]);
+  }, []);
 
   const createSubRows = (files: TableCol[], path: string, rows: TableCol[]) => {
     let done: boolean = false;
@@ -216,27 +225,34 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       if (v.Name) {
         setName(v.Name.slice(1));
       }
+      if (v.State && v.State.Status) {
+        setState(v.State.Status);
+      }
+      if (v.Config && v.Config.Image) {
+        setImage(v.Config.Image);
+      }
     }).catch((err) => {
       console.log(err);
     });
   };
 
-  const execContainer = (id: string) => {
-    console.log("start execContainer");
-
-    const resultExec = GoExecContainer(id);
+  const execContainer = (image: string) => {
+    const resultExec = GoExecContainer(image);
     resultExec.then((d) => {
       console.log(d);
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      setExecCmd(d.Exec);
+      setExecCmd("docker container exec -it "+id.slice(0, 12)+" "+d.Command);
     }).catch((err) => {
       console.log(err);
     });
   };
 
-  const filesContainer = (id: string) => {
+  const filesContainer = (id: string, state: string) => {
+    if (state != "running") {
+      return;
+    }
     const resultFiles = GoFilesContainer(id, filePath);
     resultFiles.then((d) => {
       console.log(d);
@@ -319,11 +335,10 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const RenderExecTab = useCallback(() => {
     return (
       <div className="p-2 bg-light">
-        <code>docker exec -it {id.slice(0, 12)} /bin/bash</code>
         <code>{execCmd}</code>
       </div>
     )
-  }, []);
+  }, [execCmd]);
 
   const RenderFilesTab = useCallback(() => {
     return (
@@ -362,6 +377,66 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     )
   }, [table]);
 
+  const startContainer = (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoStartContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      inspectContainer(id);
+    });
+  };
+
+  const stopContainer = (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoStopContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      inspectContainer(id);
+    });
+  };
+
+  const restartContainer = (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoRestartContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      inspectContainer(id);
+    });
+  };
+
+  const renderTooltip = (props: { text: string }) => (
+    <Tooltip id="icon-tooltip" {...props}>
+      {props.text}
+    </Tooltip>
+  );
+
   return (
     <div>
       <div className="row">
@@ -372,6 +447,41 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
               <li className="breadcrumb-item active" aria-current="page">{name}</li>
             </ol>
           </nav>
+        </div>
+
+        <div className="col-12">
+          <div className="d-flex">
+            <div className="me-auto">
+              <span>{id.slice(0, 12)}</span>
+              <OverlayTrigger
+                placement="top"
+                delay={{ show: 250, hide: 400 }}
+                overlay={renderTooltip({ text: copyTooltip })}>
+                <span>
+                  <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
+                </span>
+              </OverlayTrigger>
+            </div>
+            <div className="me-2">
+              <p className="small">
+                <strong>STATUS</strong><br />
+                {state}
+              </p>
+            </div>
+            <div className="">
+              <div className="input-group">
+                <button className="btn btn-primary" disabled={h.isExited(state) || inactiveBtn} onClick={() => stopContainer(id.slice(0, 12))}>
+                  <FaStop></FaStop>
+                </button>
+                <button className="btn btn-primary" disabled={h.isRunning(state) || inactiveBtn} onClick={() => startContainer(id.slice(0, 12))}>
+                  <FaPlay></FaPlay>
+                </button>
+                <button className="btn btn-primary" disabled={inactiveBtn} onClick={() => restartContainer(id.slice(0, 12))}>
+                  <FaArrowRotateRight></FaArrowRotateRight>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="col-12">

@@ -183,13 +183,15 @@ func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 }
 
 type rExecContainer struct {
-	Exec  string `json:"Exec"`
-	Error string `json:"Error,omitempty"`
+	Exec    string `json:"Exec"`
+	Command string `json:"Command"`
+	Error   string `json:"Error,omitempty"`
 }
 
-func (a *App) GoExecContainer(containerID string) rExecContainer {
+func (a *App) GoExecContainer(image string) rExecContainer {
 	var errs []error
-	exec := fmt.Sprintf("docker container exec -it %s /bin/bash", containerID[:12])
+	command := "/bin/bash"
+	exec := fmt.Sprintf("docker container run -it --rm %s %s", image, command)
 	cmd := genCmd(exec)
 	res, stdout, err := execCmdPipe(cmd)
 	if err != nil {
@@ -200,10 +202,10 @@ func (a *App) GoExecContainer(containerID string) rExecContainer {
 		}
 	}
 
-	errs = append(errs, fmt.Errorf("failed to start command: %s", "err.Error()"))
 	if len(errs) > 0 {
 		errs = []error{}
-		exec = fmt.Sprintf("docker container exec -it %s /bin/sh", containerID)
+		command = "/bin/sh"
+		exec = fmt.Sprintf("docker container run -it --rm %s %s", image, command)
 		cmd = genCmd(exec)
 		res, stdout, err = execCmdPipe(cmd)
 		if err != nil {
@@ -215,7 +217,7 @@ func (a *App) GoExecContainer(containerID string) rExecContainer {
 		}
 	}
 
-	if len(errs) > 0 {
+	if len(errs) == 0 {
 		scanner := bufio.NewScanner(stdout)
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -226,8 +228,9 @@ func (a *App) GoExecContainer(containerID string) rExecContainer {
 	}
 
 	return rExecContainer{
-		Exec:  exec,
-		Error: getErrorNotice(errs),
+		Exec:    exec,
+		Command: command,
+		Error:   getErrorNotice(errs),
 	}
 }
 

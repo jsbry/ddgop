@@ -4,6 +4,7 @@ import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellCon
 import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
 import { OverlayTrigger, Tooltip, Button, Modal, Dropdown } from 'react-bootstrap';
 import Container from './Container';
+import * as h from './helper';
 
 function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
@@ -14,14 +15,6 @@ function Containers() {
   const [cpuUsage, setCPUUsage] = useState<string>("--");
   const [cpuLimit, setCPULimit] = useState<string>("--");
   const [id, setID] = useState<string>("");
-
-  const copyToClipboard = async (txt: string) => {
-    await navigator.clipboard.writeText(txt);
-    setCopyTooltip("Copied");
-    setTimeout(() => {
-      setCopyTooltip("Copy to clipboard");
-    }, 1500);
-  };
 
   const renderTooltip = (props: { text: string }) => (
     <Tooltip id="icon-tooltip" {...props}>
@@ -71,7 +64,7 @@ function Containers() {
           delay={{ show: 250, hide: 400 }}
           overlay={renderTooltip({ text: copyTooltip })}>
           <span>
-            <FaRegCopy className="ms-1 btn-icon" onClick={() => copyToClipboard(id)}></FaRegCopy>
+            <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
           </span>
         </OverlayTrigger>
       </>
@@ -109,16 +102,16 @@ function Containers() {
     const name = row.original.name;
     return (
       <div className='input-group'>
-        <Button variant='light' className={`me-1 rounded-circle ${isExited(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
-        <Button variant='light' className={`me-1 rounded-circle ${isPaused(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => unpauseContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
-        <Button variant='light' className={`me-1 rounded-circle ${isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id.slice(0, 12))}><FaStop></FaStop></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isExited(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isPaused(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => unpauseContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id.slice(0, 12))}><FaStop></FaStop></Button>
         <Dropdown>
           <Dropdown.Toggle variant="light" className='me-1 rounded-circle'>
             <FaEllipsisVertical></FaEllipsisVertical>
           </Dropdown.Toggle>
           <Dropdown.Menu>
             <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>
-            <Dropdown.Item eventKey="2" disabled={inactiveBtn || isPaused(state)} onClick={() => pauseContainer(id.slice(0, 12), state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
+            <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id.slice(0, 12), state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
             <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id.slice(0, 12))}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
@@ -289,7 +282,6 @@ function Containers() {
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      listContainer("")
     }).catch((err) => {
       console.log(err);
     }).finally(() => {
@@ -302,7 +294,7 @@ function Containers() {
     if (inactiveBtn) {
       return;
     }
-    if (isPaused(state)) {
+    if (h.isPaused(state)) {
       return;
     }
     setInactiveBtn(true);
@@ -354,34 +346,6 @@ function Containers() {
       closeDelModal();
       listContainer("");
     });
-  };
-
-  const isExited = (state: string) => {
-    switch (state) {
-      case "created":
-      case "exited":
-      case "deads":
-        return true;
-    }
-    return false;
-  };
-
-  const isPaused = (state: string) => {
-    switch (state) {
-      case "paused":
-        return true;
-    }
-    return false;
-  };
-
-  const isRunning = (state: string) => {
-    switch (state) {
-      case "restarting":
-      case "running":
-      case "removing":
-        return true;
-    }
-    return false;
   };
 
   const closeDelModal = () => {
