@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
+import { GoStatsContainer, GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, useReactTable, flexRender, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
 import { OverlayTrigger } from 'react-bootstrap';
 import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion, FaStop, FaPlay, FaArrowRotateRight, FaRegCopy } from "react-icons/fa6";
@@ -21,11 +21,23 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [image, setImage] = useState<string>("");
+  const [memUsage, setMemUsage] = useState<string>("--");
+  const [cpuPerc, setCPUPerc] = useState<string>("--");
+  const [cpuLimit, setCPULimit] = useState<string>("--");
 
   useEffect(() => {
     execContainer(image);
     inspectContainer(id);
   }, []);
+
+  useEffect(() => {
+    statsContainer(id);
+    const interval = setInterval(() => {
+      statsContainer(id);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [id]);
 
   useEffect(() => {
     GoLogsContainer(id);
@@ -46,6 +58,23 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       logRef.current.scrollTop = logRef.current.scrollHeight;
     }
   }, [logs, logRef]);
+
+  const statsContainer = (id: string) => {
+    const stats = GoStatsContainer(id);
+    stats.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+      console.log(d);
+      if (d.ContainerStats) {
+        setCPUPerc(d.ContainerStats.CPUPerc);
+        setCPULimit(d.ContainerStats.CPULimit);
+        setMemUsage(d.ContainerStats.MemUsage);
+      }
+    }).catch((err) => {
+      console.log(err);
+    });
+  };
 
   type TableCol = {
     name: string;
@@ -72,7 +101,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       }
     }
     const marginLeft = (depth * 10) + "px"
-
 
     if (name == "") {
       return (
@@ -241,7 +269,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      setExecCmd("docker container exec -it "+id.slice(0, 12)+" "+d.Command);
+      setExecCmd("docker container exec -it " + id.slice(0, 12) + " " + d.Command);
     }).catch((err) => {
       console.log(err);
     });
@@ -449,6 +477,12 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
                   <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
                 </span>
               </OverlayTrigger>
+            </div>
+            <div className="me-auto">
+              <p className="small">
+                <strong>CPU Usage: </strong>{cpuPerc} / {cpuLimit}<br />
+                <strong>Mem Usage: </strong>{memUsage}
+              </p>
             </div>
             <div className="me-2">
               <p className="small">

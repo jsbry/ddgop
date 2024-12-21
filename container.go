@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"slices"
@@ -333,4 +334,47 @@ var pathCleanReg = regexp.MustCompile(`/+`)
 
 func pathClean(s string) string {
 	return pathCleanReg.ReplaceAllString(s, "/")
+}
+
+type rContainerStats struct {
+	ContainerStats ContainerStats `json:"ContainerStats"`
+	Error          string         `json:"Error,omitempty"`
+}
+
+func (a *App) GoStatsContainer(containerID string) rContainerStats {
+	var errs []error
+	cmd := genCmd(fmt.Sprintf("docker container stats --no-trunc --no-stream --format '{{json .}}' %s", containerID))
+	output, err := execCmd(cmd)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	}
+	writeBytes("output.log", output)
+
+	container := ContainerStats{}
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		if line == "" {
+			continue
+		}
+		var cj ContainerStatsJSON
+		json.Unmarshal([]byte(line), &cj)
+
+		container = ContainerStats{
+			ContainerID: cj.ID,
+			CPUPerc:     cj.CPUPerc,
+			MemPerc:     cj.MemPerc,
+			MemUsage:    cj.MemUsage,
+		}
+	}
+
+	CPULimit, err := getCPULimit()
+	if err != nil {
+		errs = append(errs, fmt.Errorf("getCPULimit err: %s", err.Error()))
+	}
+	container.CPULimit = fmt.Sprintf("%d %%", CPULimit*100)
+
+	return rContainerStats{
+		ContainerStats: container,
+		Error:          getErrorNotice(errs),
+	}
 }

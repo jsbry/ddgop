@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { GoContainers, GoStatsContainer, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
+import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
 import { OverlayTrigger, Tooltip, Button, Modal, Dropdown } from 'react-bootstrap';
@@ -205,7 +205,7 @@ function Containers() {
       console.log(err);
     });
 
-    const stats = GoStatsContainer();
+    const stats = GoStatsContainers();
     stats.then((d) => {
       if (d.Error != null) {
         throw new Error(d.Error);

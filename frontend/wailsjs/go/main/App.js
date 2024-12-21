@@ -38,8 +38,12 @@ export function GoStartContainer(arg1) {
   return window['go']['main']['App']['GoStartContainer'](arg1);
 }
 
-export function GoStatsContainer() {
-  return window['go']['main']['App']['GoStatsContainer']();
+export function GoStatsContainer(arg1) {
+  return window['go']['main']['App']['GoStatsContainer'](arg1);
+}
+
+export function GoStatsContainers() {
+  return window['go']['main']['App']['GoStatsContainers']();
 }
 
 export function GoStopContainer(arg1) {

@@ -92,7 +92,7 @@ func (a *App) GoContainers() rContainers {
 	}
 }
 
-type rContainerStats struct {
+type rContainersStats struct {
 	Stats          Stats            `json:"Stats"`
 	ContainerStats []ContainerStats `json:"ContainerStats"`
 	Error          string           `json:"Error,omitempty"`
@@ -101,6 +101,7 @@ type rContainerStats struct {
 type ContainerStats struct {
 	ContainerID string `json:"ContainerID"`
 	CPUPerc     string `json:"CPUPerc"`
+	CPULimit    string `json:"CPULimit"`
 	MemPerc     string `json:"MemPerc"`
 	MemUsage    string `json:"MemUsage"`
 }
@@ -134,7 +135,7 @@ var cpuUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)%`)
 var memUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
 var memUsageTotalReg = regexp.MustCompile(`\s*\/\s*(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
 
-func (a *App) GoStatsContainer() rContainerStats {
+func (a *App) GoStatsContainers() rContainersStats {
 	var errs []error
 	cmd := genCmd("docker container stats -a --no-trunc --no-stream --format '{{json .}}'")
 	output, err := execCmd(cmd)
@@ -216,7 +217,7 @@ func (a *App) GoStatsContainer() rContainerStats {
 	}
 	stats.CPULimit = fmt.Sprintf("%d %%", CPULimit*100)
 
-	return rContainerStats{
+	return rContainersStats{
 		Stats:          stats,
 		ContainerStats: containers,
 		Error:          getErrorNotice(errs),

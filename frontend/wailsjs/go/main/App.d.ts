@@ -20,7 +20,9 @@ export function GoRestartContainer(arg1:string):Promise<main.rRestartContainer>;
 
 export function GoStartContainer(arg1:string):Promise<main.rStartContainer>;
 
-export function GoStatsContainer():Promise<main.rContainerStats>;
+export function GoStatsContainer(arg1:string):Promise<main.rContainerStats>;
+
+export function GoStatsContainers():Promise<main.rContainersStats>;
 
 export function GoStopContainer(arg1:string):Promise<main.rStopContainer>;
 
