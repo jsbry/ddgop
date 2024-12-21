@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, useReactTable, flexRender, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { OverlayTrigger } from 'react-bootstrap';
 import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion, FaStop, FaPlay, FaArrowRotateRight, FaRegCopy } from "react-icons/fa6";
 import JsonView from '@uiw/react-json-view';
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime'
@@ -16,7 +16,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const logRef = useRef<HTMLPreElement>(null);
   const [execCmd, setExecCmd] = useState<string>("");
   const [files, setFiles] = useState<TableCol[]>([]);
-  const [filePath, setFilePath] = useState<string>("/");
   const [expanded, setExpanded] = useState<ExpandedState>({})
   const [state, setState] = useState<string>("");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
@@ -252,7 +251,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     if (state != "running") {
       return;
     }
-    const resultFiles = GoFilesContainer(id, filePath);
+    const resultFiles = GoFilesContainer(id, "/");
     resultFiles.then((d) => {
       console.log(d);
       if (d.Error != null) {
