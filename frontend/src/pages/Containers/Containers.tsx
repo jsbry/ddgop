@@ -16,12 +16,6 @@ function Containers() {
   const [cpuLimit, setCPULimit] = useState<string>("--");
   const [id, setID] = useState<string>("");
 
-  const renderTooltip = (props: { text: string }) => (
-    <Tooltip id="icon-tooltip" {...props}>
-      {props.text}
-    </Tooltip>
-  );
-
   type TableCol = {
     containerID: string;
     image: string;
@@ -62,7 +56,7 @@ function Containers() {
         <OverlayTrigger
           placement="top"
           delay={{ show: 250, hide: 400 }}
-          overlay={renderTooltip({ text: copyTooltip })}>
+          overlay={h.renderTooltip({ text: copyTooltip })}>
           <span>
             <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
           </span>

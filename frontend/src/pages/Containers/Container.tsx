@@ -431,12 +431,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     });
   };
 
-  const renderTooltip = (props: { text: string }) => (
-    <Tooltip id="icon-tooltip" {...props}>
-      {props.text}
-    </Tooltip>
-  );
-
   return (
     <div>
       <div className="row">
@@ -456,7 +450,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
               <OverlayTrigger
                 placement="top"
                 delay={{ show: 250, hide: 400 }}
-                overlay={renderTooltip({ text: copyTooltip })}>
+                overlay={h.renderTooltip({ text: copyTooltip })}>
                 <span>
                   <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
                 </span>

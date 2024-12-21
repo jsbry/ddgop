@@ -35,3 +35,9 @@ export const copyToClipboard = async (txt: string, setCopyTooltip: React.Dispatc
     setCopyTooltip("Copy to clipboard");
   }, 1500);
 };
+
+export const renderTooltip = (props: { text: string }) => (
+  <Tooltip id="icon-tooltip" {...props}>
+    {props.text}
+  </Tooltip>
+);
