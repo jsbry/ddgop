@@ -65,7 +65,7 @@ func (a *App) GoContainers() rContainers {
 		if 0 < len(splitPorts) {
 			for _, p := range splitPorts {
 				p = strings.TrimSpace(p)
-				if strings.HasPrefix(p, "::") {
+				if strings.HasPrefix(p, "::") || strings.HasPrefix(p, "[::]") {
 					// IPv6
 					continue
 				}
