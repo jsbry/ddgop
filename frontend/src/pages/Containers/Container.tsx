@@ -14,7 +14,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [inspect, setInspect] = useState<string>("");
   const [name, setName] = useState<string>("");
   const logRef = useRef<HTMLPreElement>(null);
-  const [autoRefreshLog, setAutoRefreshLog] = useState<boolean>(true);
   const [execCmd, setExecCmd] = useState<string>("");
   const [files, setFiles] = useState<TableCol[]>([]);
   const [filePath, setFilePath] = useState<string>("/");
@@ -303,10 +302,6 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
         <pre className="log-container p-2 bg-light" ref={logRef}>
           <RenderLogs></RenderLogs>
         </pre>
-        <div className="form-check form-switch">
-          <input className="form-check-input" type="checkbox" role="switch" id="flexSwitchCheckDefault" checked={autoRefreshLog} onChange={() => setAutoRefreshLog(!autoRefreshLog)} />
-          <label className="form-check-label" htmlFor="flexSwitchCheckDefault">auto refresh</label>
-        </div>
       </>
     )
   };
