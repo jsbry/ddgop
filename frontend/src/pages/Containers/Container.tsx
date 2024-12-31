@@ -5,7 +5,7 @@ import { OverlayTrigger } from 'react-bootstrap';
 import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion, FaStop, FaPlay, FaArrowRotateRight, FaRegCopy } from "react-icons/fa6";
 import JsonView from '@uiw/react-json-view';
 import { EventsOn, EventsOff } from '../../../wailsjs/runtime'
-import * as h from './helper';
+import * as h from '../helper';
 
 function Container(props: { id: string, setID: React.Dispatch<React.SetStateAction<string>> }) {
   const { id, setID } = props;

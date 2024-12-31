@@ -10,12 +10,20 @@ export function GoDeleteContainer(arg1) {
   return window['go']['main']['App']['GoDeleteContainer'](arg1);
 }
 
+export function GoDeleteImage(arg1) {
+  return window['go']['main']['App']['GoDeleteImage'](arg1);
+}
+
 export function GoExecContainer(arg1) {
   return window['go']['main']['App']['GoExecContainer'](arg1);
 }
 
 export function GoFilesContainer(arg1, arg2) {
   return window['go']['main']['App']['GoFilesContainer'](arg1, arg2);
+}
+
+export function GoImages() {
+  return window['go']['main']['App']['GoImages']();
 }
 
 export function GoInspectContainer(arg1) {

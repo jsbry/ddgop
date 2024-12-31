@@ -94,6 +94,40 @@ export namespace main {
 		    return a;
 		}
 	}
+	export class Image {
+	    Name: string;
+	    Tag: string;
+	    CreatedAt: string;
+	    CreatedSince: string;
+	    Size: string;
+	    ImageID: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Image(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.Tag = source["Tag"];
+	        this.CreatedAt = source["CreatedAt"];
+	        this.CreatedSince = source["CreatedSince"];
+	        this.Size = source["Size"];
+	        this.ImageID = source["ImageID"];
+	    }
+	}
+	export class ImageStats {
+	    Size: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImageStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Size = source["Size"];
+	    }
+	}
 	export class Stats {
 	    CPUUsage: string;
 	    CPULimit: string;
@@ -224,6 +258,20 @@ export namespace main {
 	        this.Error = source["Error"];
 	    }
 	}
+	export class rDeleteImage {
+	    ImageID: string;
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rDeleteImage(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.ImageID = source["ImageID"];
+	        this.Error = source["Error"];
+	    }
+	}
 	export class rExecContainer {
 	    Exec: string;
 	    Command: string;
@@ -251,6 +299,40 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Files = this.convertValues(source["Files"], File);
+	        this.Error = source["Error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class rImages {
+	    Images: Image[];
+	    Stats: ImageStats;
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rImages(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Images = this.convertValues(source["Images"], Image);
+	        this.Stats = this.convertValues(source["Stats"], ImageStats);
 	        this.Error = source["Error"];
 	    }
 	

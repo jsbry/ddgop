@@ -67,6 +67,33 @@
     margin-left: 17px;
 }
 
+.table-images th:nth-of-type(1),
+.table-images th:nth-of-type(2) {
+    min-width: 150px;
+    width: 150px;
+}
+
+.table-images th:nth-of-type(3) {
+    min-width: 150px;
+    width: 150px;
+}
+
+.table-images th:nth-of-type(5) {
+    min-width: 130px;
+    width: 130px;
+}
+
+.table-images th:nth-of-type(6),
+.table-images td:nth-of-type(6) {
+    min-width: 100px;
+    width: 100px;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background-color: #f7f9ff;
+}
+
+
 /* icon */
 .btn-icon {
     cursor: pointer;

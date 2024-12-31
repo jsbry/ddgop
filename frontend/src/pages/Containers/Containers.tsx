@@ -2,9 +2,9 @@ import { useEffect, useState, useCallback } from 'react';
 import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
-import { OverlayTrigger, Tooltip, Button, Modal, Dropdown } from 'react-bootstrap';
+import { OverlayTrigger, Button, Modal, Dropdown } from 'react-bootstrap';
 import Container from './Container';
-import * as h from './helper';
+import * as h from '../helper';
 
 function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
