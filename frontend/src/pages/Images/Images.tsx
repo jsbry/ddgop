@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
-import { GoImages,GoDeleteImage } from "../../../wailsjs/go/main/App";
+import { GoImages, GoDeleteImage } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { OverlayTrigger, Button, Modal, ProgressBar } from 'react-bootstrap';
-import { FaRegCopy, FaRegTrashCan } from "react-icons/fa6";
+import { FaRegCopy, FaRegTrashCan, FaArrowRotateRight } from "react-icons/fa6";
 import * as h from '../helper';
 
 function Images() {
@@ -153,9 +153,10 @@ function Images() {
         <div className="row">
           <div className="col-6">
             <ProgressBar now={100} />
-            {size}
+            <span className="small">{size}</span>
           </div>
           <div className="col-6">
+            <FaArrowRotateRight></FaArrowRotateRight>
           </div>
           <div className="col-12">
             <div className="table-area table-images overflow-auto">
