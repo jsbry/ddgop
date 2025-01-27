@@ -124,6 +124,12 @@ function Images() {
     });
   };
 
+  const reloadList = () => {
+    setData([]);
+    setSize("");
+    listImage();
+  }
+
   const deleteImage = (id: string) => {
     if (inactiveBtn) {
       return;
@@ -152,11 +158,12 @@ function Images() {
       <div>
         <div className="row">
           <div className="col-6">
-            <ProgressBar now={100} />
+            {/* TODO */}
+            <ProgressBar now={95} />
             <span className="small">{size}</span>
           </div>
-          <div className="col-6">
-            <FaArrowRotateRight></FaArrowRotateRight>
+          <div className="col-6 d-flex justify-content-end">
+            <FaArrowRotateRight className="btn-icon" onClick={reloadList}></FaArrowRotateRight>
           </div>
           <div className="col-12">
             <div className="table-area table-images overflow-auto">
