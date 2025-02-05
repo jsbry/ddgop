@@ -14,6 +14,10 @@ export function GoDeleteImage(arg1) {
   return window['go']['main']['App']['GoDeleteImage'](arg1);
 }
 
+export function GoDeleteVolume(arg1) {
+  return window['go']['main']['App']['GoDeleteVolume'](arg1);
+}
+
 export function GoExecContainer(arg1) {
   return window['go']['main']['App']['GoExecContainer'](arg1);
 }
@@ -60,6 +64,10 @@ export function GoStopContainer(arg1) {
 
 export function GoUnpauseContainer(arg1) {
   return window['go']['main']['App']['GoUnpauseContainer'](arg1);
+}
+
+export function GoVolumes() {
+  return window['go']['main']['App']['GoVolumes']();
 }
 
 export function Greet(arg1) {

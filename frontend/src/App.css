@@ -93,6 +93,10 @@
     background-color: #f7f9ff;
 }
 
+.table-volumes th:nth-of-type(3) {
+    min-width: 100px;
+    width: 100px;
+}
 
 /* icon */
 .btn-icon {

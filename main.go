@@ -12,6 +12,8 @@ import (
 //go:embed all:frontend/dist all:public
 var assets embed.FS
 
+var debug = "on"
+
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
@@ -39,6 +41,10 @@ func main() {
 }
 
 func writeBytes(filename string, b []byte) error {
+	if debug == "off" {
+		return nil
+	}
+
 	file, err := os.Create(filename)
 	if err != nil {
 		return err

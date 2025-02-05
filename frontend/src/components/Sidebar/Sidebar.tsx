@@ -1,7 +1,7 @@
-import { HiOutlineCube } from "react-icons/hi2";
-import { HiOutlineCubeTransparent } from "react-icons/hi2";
+import { HiOutlineCube, HiOutlineCubeTransparent } from "react-icons/hi2";
 import { FaRegHdd } from "react-icons/fa";
 import { HiOutlineWrench } from "react-icons/hi2";
+import { Badge } from 'react-bootstrap';
 
 type GProps = {
   content: string;
@@ -35,7 +35,7 @@ function Sidebar(props: GProps) {
         <li>
           <a href="#" className={content == "Builds" ? "nav-link active" : "nav-link link-dark"} onClick={() => setContent("Builds")}>
             <HiOutlineWrench className="me-2"></HiOutlineWrench>
-            Builds
+            Builds <Badge bg="dark">WIP</Badge>
           </a>
         </li>
       </ul>

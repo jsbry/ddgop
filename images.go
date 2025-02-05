@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -41,8 +40,6 @@ type ImageJSON struct {
 	UniqueSize   string `json:"UniqueSize"`
 	VirtualSize  string `json:"VirtualSize"`
 }
-
-var imageSizeReg = regexp.MustCompile(`(\d+(\.\d+)?)(B|KB|MB|GB|TB)`)
 
 var sizeUnitMap = map[string]float64{
 	"B":  1,
@@ -87,21 +84,23 @@ func (a *App) GoImages() rImages {
 		}
 
 		// Size
-		match := imageSizeReg.FindStringSubmatch(image.Size)
-		if len(match) < 4 {
-			errs = append(errs, fmt.Errorf("size match len < 4: %s", image.Size))
-			continue
-		}
-		value, err := strconv.ParseFloat(match[1], 64)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
-			continue
-		}
-		unit := match[3]
-		if multiplier, exists := sizeUnitMap[unit]; exists {
-			size += value * multiplier
-		} else {
-			errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
+		if image.Size != sizeNA {
+			match := sizeReg.FindStringSubmatch(image.Size)
+			if len(match) < 4 {
+				errs = append(errs, fmt.Errorf("size match len < 4: %s", image.Size))
+				continue
+			}
+			value, err := strconv.ParseFloat(match[1], 64)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
+				continue
+			}
+			unit := match[3]
+			if multiplier, exists := sizeUnitMap[unit]; exists {
+				size += value * multiplier
+			} else {
+				errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
+			}
 		}
 		images = append(images, image)
 	}

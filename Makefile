@@ -4,4 +4,4 @@ dev:
 
 .PHONY: build
 build:
-	wails build -ldflags "-s -w -H windowsgui" -trimpath
+	wails build -ldflags "-s -w -H windowsgui -X main.debug=off" -trimpath
