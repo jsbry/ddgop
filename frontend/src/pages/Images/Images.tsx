@@ -159,6 +159,7 @@ function Images() {
         <div className="row">
           <div className="col-6">
             {/* TODO */}
+            {/* docker system df の RECLAIMABLE を参照する */}
             <ProgressBar now={95} />
             <span className="small">{size}</span>
           </div>
