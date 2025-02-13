@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { GoStatsContainer, GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
+import { GoStatsContainer, GoLogsContainer, GoInspectContainer, GoExecContainer, GoFilesContainer, GoStartContainer, GoStopContainer, GoRestartContainer, OpenConsole } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, useReactTable, flexRender, ExpandedState, getCoreRowModel, getExpandedRowModel, Row } from '@tanstack/react-table';
 import { OverlayTrigger } from 'react-bootstrap';
 import { FaAngleRight, FaAngleDown, FaRegFile, FaRegFolder, FaQuestion, FaStop, FaPlay, FaArrowRotateRight, FaRegCopy } from "react-icons/fa6";
@@ -356,8 +356,13 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
 
   const RenderExecTab = useCallback(() => {
     return (
-      <div className="p-2 bg-light">
-        <code>{execCmd}</code>
+      <div>
+        <div className="p-2 bg-light">
+          <code>{execCmd}</code>
+        </div>
+        <div className="col-12 pt-2">
+          <button className="btn btn-sm btn-primary" onClick={() => newConsole()}>Console</button>
+        </div>
       </div>
     )
   }, [execCmd]);
@@ -452,6 +457,10 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
       inspectContainer(id);
     });
   };
+
+  const newConsole = () => {
+    OpenConsole();
+  }
 
   return (
     <div>

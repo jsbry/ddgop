@@ -73,3 +73,7 @@ export function GoVolumes() {
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
+
+export function OpenConsole() {
+  return window['go']['main']['App']['OpenConsole']();
+}
