@@ -323,23 +323,15 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     }
   };
 
-  const RenderLogsTab = () => {
+  const RenderLogsTab = useCallback(() => {
     return (
       <>
         <pre className="log-container p-2 bg-light" ref={logRef}>
-          <RenderLogs></RenderLogs>
+          {logs.join("\n")}
         </pre>
       </>
     )
-  };
-
-  const RenderLogs = useCallback(() => {
-    return (
-      <>
-        {logs.join("\n")}
-      </>
-    )
-  }, [logs])
+  }, [logs]);
 
   const RenderInspectTab = useCallback(() => {
     inspectContainer(id);
