@@ -20,6 +20,8 @@ export function GoInspectContainer(arg1:string):Promise<main.rInspectContainer>;
 
 export function GoLogsContainer(arg1:string):Promise<void>;
 
+export function GoOpenConsole(arg1:string):Promise<void>;
+
 export function GoPauseContainer(arg1:string):Promise<main.rPauseContainer>;
 
 export function GoRestartContainer(arg1:string):Promise<main.rRestartContainer>;
@@ -37,5 +39,3 @@ export function GoUnpauseContainer(arg1:string):Promise<main.rUnpauseContainer>;
 export function GoVolumes():Promise<main.rVolumes>;
 
 export function Greet(arg1:string):Promise<string>;
-
-export function OpenConsole():Promise<void>;

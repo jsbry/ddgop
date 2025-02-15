@@ -38,6 +38,10 @@ export function GoLogsContainer(arg1) {
   return window['go']['main']['App']['GoLogsContainer'](arg1);
 }
 
+export function GoOpenConsole(arg1) {
+  return window['go']['main']['App']['GoOpenConsole'](arg1);
+}
+
 export function GoPauseContainer(arg1) {
   return window['go']['main']['App']['GoPauseContainer'](arg1);
 }
@@ -72,8 +76,4 @@ export function GoVolumes() {
 
 export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
-}
-
-export function OpenConsole() {
-  return window['go']['main']['App']['OpenConsole']();
 }

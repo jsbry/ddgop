@@ -1,14 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"os/exec"
 	"runtime"
 )
 
-func (a *App) OpenConsole() error {
+func (a *App) GoOpenConsole(s string) error {
 	var cmd *exec.Cmd
 
-	copyCmd := exec.Command("cmd.exe", "/c", "echo docker ps | clip")
+	copyCmd := exec.Command("cmd.exe", "/c", fmt.Sprintf("echo %s | clip", s))
 	if err := copyCmd.Run(); err != nil {
 		return err
 	}

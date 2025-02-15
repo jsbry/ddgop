@@ -2,6 +2,7 @@ import Main from '../../pages/Main/Main';
 import Containers from '../../pages/Containers/Containers';
 import Images from '../../pages/Images/Images';
 import Volumes from '../../pages/Volumes/Volumes';
+import Networks from '../../pages/Networks/Networks';
 import Builds from '../../pages/Builds/Builds';
 
 type GProps = {
@@ -20,6 +21,8 @@ function Content(props: GProps) {
         return <Images></Images>;
       case 'Volumes':
         return <Volumes></Volumes>;
+      case 'Networks':
+        return <Networks></Networks>;
       case 'Builds':
         return <Builds></Builds>;
       default:
