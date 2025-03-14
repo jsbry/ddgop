@@ -334,7 +334,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   }, [logs]);
 
   const RenderInspectTab = useCallback(() => {
-    inspectContainer(id);
+    // inspectContainer(id);
     if (inspect == "") {
       return <></>
     }
