@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"runtime"
+	"slices"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -15,14 +17,15 @@ type rContainers struct {
 }
 
 type Container struct {
-	ContainerID string   `json:"ContainerID"`
-	Image       string   `json:"Image"`
-	Command     string   `json:"Command"`
-	Created     string   `json:"Created"`
-	Status      string   `json:"Status"`
-	Ports       []string `json:"Ports"`
-	Name        string   `json:"Name"`
-	State       string   `json:"State"`
+	ContainerID   string      `json:"ContainerID"`
+	Image         string      `json:"Image"`
+	Command       string      `json:"Command"`
+	Created       string      `json:"Created"`
+	Status        string      `json:"Status"`
+	Ports         []string    `json:"Ports"`
+	Name          string      `json:"Name"`
+	State         string      `json:"State"`
+	SubContainers []Container `json:"SubContainers"`
 }
 
 type ContainerJSON struct {
@@ -86,10 +89,60 @@ func (a *App) GoContainers() rContainers {
 		containers = append(containers, container)
 	}
 
+	containers = groupByPrefix(containers)
+
 	return rContainers{
 		Containers: containers,
 		Error:      getErrorNotice(errs),
 	}
+}
+
+const separateKey = "-"
+
+func groupByPrefix(data []Container) []Container {
+	grouped := make(map[string][]Container)
+
+	tmp := []Container{}
+	for _, entry := range data {
+		parts := strings.Split(entry.Name, separateKey)
+		if len(parts) > 1 {
+			groupKey := parts[0]
+
+			entry.Name = strings.Replace(entry.Name, groupKey+separateKey, "", 1)
+			grouped[groupKey] = append(grouped[groupKey], entry)
+		} else {
+			tmp = append(tmp, entry)
+		}
+	}
+
+	keys := []string{}
+	for parent := range grouped {
+		keys = append(keys, parent)
+	}
+	sort.Strings(keys)
+
+	containers := []Container{}
+	for _, parent := range keys {
+		state := "exited"
+		for _, child := range grouped[parent] {
+			if slices.Contains([]string{"restarting", "running", "removing"}, child.State) {
+				state = "running"
+			}
+		}
+
+		container := Container{
+			Name:          parent,
+			Ports:         []string{},
+			State:         state,
+			SubContainers: grouped[parent],
+		}
+
+		containers = append(containers, container)
+
+	}
+	containers = append(containers, tmp...)
+
+	return containers
 }
 
 type rContainersStats struct {

@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
-import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
-import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight } from "react-icons/fa6";
+import { createColumnHelper, ExpandedState, getCoreRowModel, getExpandedRowModel, useReactTable, flexRender, CellContext, Row } from '@tanstack/react-table';
+import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight, FaAngleRight, FaAngleDown } from "react-icons/fa6";
 import { OverlayTrigger, Button, Modal, Dropdown } from 'react-bootstrap';
 import Container from './Container';
 import * as h from '../helper';
 
 function Containers() {
   const [data, setData] = useState<TableCol[]>([]);
+  const [expanded, setExpanded] = useState<ExpandedState>({})
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
   const [memUsage, setMemUsage] = useState<string>("--");
@@ -25,31 +26,69 @@ function Containers() {
     ports: string[];
     name: string;
     state: string;
+    subRows?: TableCol[];
   };
 
-  const renderState = useCallback(({ getValue }: CellContext<TableCol, string>) => {
-    const state = getValue();
+  const renderState = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const id = row.original.containerID;
+    if (id == "") {
+      return (
+        <>
+          {row.getIsExpanded() ? <FaAngleDown {...{
+            onClick: row.getToggleExpandedHandler(),
+            style: { cursor: 'pointer' },
+            className: "me-1",
+          }}></FaAngleDown> : <FaAngleRight {...{
+            onClick: row.getToggleExpandedHandler(),
+            style: { cursor: 'pointer' },
+            className: "me-1",
+          }}></FaAngleRight>}
+        </>
+      )
+    }
+
+    const state = row.original.state;
+    let color = "";
     switch (state) {
       case "created":
-        return <FaCircle color="#7f93ff"></FaCircle>
+        color = "#7f93ff";
+        break;
       case "restarting":
-        return <FaCircle color="#ffdb20"></FaCircle>
+        color = "#ffdb20";
+        break;
       case "running":
-        return <FaCircle color="#00d931"></FaCircle>
+        color = "#00d931";
+        break;
       case "removing":
-        return <FaCircle color="#ff4343"></FaCircle>
+        color = "#ff4343";
+        break;
       case "paused":
-        return <FaCircle color="#ffdb20"></FaCircle>
+        color = "#ffdb20";
+        break;
       case "exited":
-        return <FaCircle color="#ff4343"></FaCircle>
+        color = "#ff4343";
+        break;
       case "deads":
-        return <FaCircle color="#000"></FaCircle>
+        color = "#000";
+        break;
     }
-    return <></>
+    return (
+      <div style={{ paddingLeft: `${row.depth}rem` }}>
+        <FaCircle color={color}></FaCircle>
+      </div>
+    )
   }, []);
 
-  const renderContainerID = useCallback(({ getValue }: CellContext<TableCol, string>) => {
-    const id = getValue();
+  const renderContainerID = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const id = row.original.containerID;
+    if (id == "") {
+      const subRows = row.original.subRows;
+      return (
+        <span className='text-secondary'>
+          {subRows?.length} containers
+        </span>
+      )
+    }
     return (
       <>
         {id.slice(0, 12)}
@@ -91,22 +130,26 @@ function Containers() {
   }, []);
 
   const renderActions = useCallback(({ row }: CellContext<TableCol, unknown>) => {
-    const id = row.original.containerID;
+    let id = row.original.containerID.slice(0, 12);
     const state = row.original.state;
     const name = row.original.name;
+    const subRows = row.original.subRows;
+    if (typeof subRows !== "undefined") {
+      id = subRows.map(c => c.containerID.slice(0, 12)).join(",");
+    }
     return (
       <div className='input-group'>
-        <Button variant='light' className={`me-1 rounded-circle ${h.isExited(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
-        <Button variant='light' className={`me-1 rounded-circle ${h.isPaused(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => unpauseContainer(id.slice(0, 12))}><FaPlay></FaPlay></Button>
-        <Button variant='light' className={`me-1 rounded-circle ${h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id.slice(0, 12))}><FaStop></FaStop></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isExited(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id)}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isPaused(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => unpauseContainer(id)}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id)}><FaStop></FaStop></Button>
         <Dropdown>
           <Dropdown.Toggle variant="light" className='me-1 rounded-circle'>
             <FaEllipsisVertical></FaEllipsisVertical>
           </Dropdown.Toggle>
           <Dropdown.Menu>
             <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>
-            <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id.slice(0, 12), state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
-            <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id.slice(0, 12))}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
+            <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id, state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
+            <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id)}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
         <div className='vr me-1'></div>
@@ -162,7 +205,13 @@ function Containers() {
   const table = useReactTable<TableCol>({
     columns: tableColumnDefs,
     data: data,
+    state: {
+      expanded,
+    },
+    getSubRows: (row) => row.subRows,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
   })
 
   useEffect(() => {
@@ -185,7 +234,6 @@ function Containers() {
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      console.log(d);
       let rows: TableCol[] = [];
       d.Containers.forEach((container) => {
         const t: TableCol = {
@@ -198,6 +246,25 @@ function Containers() {
           name: container.Name,
           state: container.State,
         };
+
+        if (container.SubContainers) {
+          let subRows: TableCol[] = [];
+          container.SubContainers.forEach((container) => {
+            const t: TableCol = {
+              containerID: container.ContainerID,
+              image: container.Image,
+              command: container.Command,
+              created: container.Created,
+              status: container.Status,
+              ports: container.Ports,
+              name: container.Name,
+              state: container.State,
+            };
+            subRows.push(t);
+          });
+          t.subRows = subRows;
+        }
+
         rows.push(t);
       });
       setData(rows);
@@ -230,22 +297,25 @@ function Containers() {
     });
   };
 
-  const startContainer = (id: string) => {
+  const startContainer = async (id: string) => {
     if (inactiveBtn) {
       return;
     }
     setInactiveBtn(true);
-    const result = GoStartContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoStartContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    listContainer("");
   };
 
   const unpauseContainer = (id: string) => {
@@ -253,35 +323,41 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const result = GoUnpauseContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoUnpauseContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    listContainer("");
   };
 
-  const stopContainer = (id: string) => {
+  const stopContainer = async (id: string) => {
     if (inactiveBtn) {
       return;
     }
     setInactiveBtn(true);
-    const result = GoStopContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoStopContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    listContainer("");
   };
 
   const pauseContainer = (id: string, state: string) => {
@@ -292,17 +368,20 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const result = GoPauseContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoPauseContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    listContainer("");
   };
 
   const restartContainer = (id: string) => {
@@ -310,17 +389,20 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const result = GoRestartContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoRestartContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    listContainer("");
   };
 
   const deleteContainer = (id: string) => {
@@ -328,18 +410,21 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const result = GoDeleteContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      closeDelModal();
-      listContainer("");
+    const list = id.split(",");
+    list.map((id) => {
+      const result = GoDeleteContainer(id);
+      result.then((d) => {
+        if (d.Error != null) {
+          throw new Error(d.Error);
+        }
+      }).catch((err) => {
+        console.log(err);
+      }).finally(() => {
+      });
     });
+    setInactiveBtn(false);
+    closeDelModal();
+    listContainer("");
   };
 
   const closeDelModal = () => {
