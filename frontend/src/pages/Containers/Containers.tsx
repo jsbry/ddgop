@@ -302,20 +302,17 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoStartContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoStartContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
     });
-    setInactiveBtn(false);
-    listContainer("");
   };
 
   const unpauseContainer = (id: string) => {
@@ -323,20 +320,17 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoUnpauseContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoUnpauseContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
     });
-    setInactiveBtn(false);
-    listContainer("");
   };
 
   const stopContainer = async (id: string) => {
@@ -344,20 +338,17 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoStopContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoStopContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
     });
-    setInactiveBtn(false);
-    listContainer("");
   };
 
   const pauseContainer = (id: string, state: string) => {
@@ -368,20 +359,17 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoPauseContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoPauseContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
     });
-    setInactiveBtn(false);
-    listContainer("");
   };
 
   const restartContainer = (id: string) => {
@@ -389,20 +377,17 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoRestartContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoRestartContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
     });
-    setInactiveBtn(false);
-    listContainer("");
   };
 
   const deleteContainer = (id: string) => {
@@ -410,21 +395,18 @@ function Containers() {
       return;
     }
     setInactiveBtn(true);
-    const list = id.split(",");
-    list.map((id) => {
-      const result = GoDeleteContainer(id);
-      result.then((d) => {
-        if (d.Error != null) {
-          throw new Error(d.Error);
-        }
-      }).catch((err) => {
-        console.log(err);
-      }).finally(() => {
-      });
+    const result = GoDeleteContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      closeDelModal();
+      listContainer("");
     });
-    setInactiveBtn(false);
-    closeDelModal();
-    listContainer("");
   };
 
   const closeDelModal = () => {

@@ -19,15 +19,20 @@ type rStartContainer struct {
 
 func (a *App) GoStartContainer(containerID string) rStartContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container start %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container start %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rStartContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
@@ -39,15 +44,20 @@ type rStopContainer struct {
 
 func (a *App) GoStopContainer(containerID string) rStopContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container stop %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container stop %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rStopContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
@@ -59,15 +69,20 @@ type rDeleteContainer struct {
 
 func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container rm -f %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container rm -f %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rDeleteContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
@@ -79,15 +94,20 @@ type rPauseContainer struct {
 
 func (a *App) GoPauseContainer(containerID string) rPauseContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container pause %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container pause %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rPauseContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
@@ -99,15 +119,20 @@ type rUnpauseContainer struct {
 
 func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container unpause %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container unpause %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rUnpauseContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
@@ -119,15 +144,20 @@ type rRestartContainer struct {
 
 func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container restart %s", containerID))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	var ids []string
+	list := strings.Split(containerID, ",")
+	for _, id := range list {
+		cmd := genCmd(fmt.Sprintf("docker container restart %s", id))
+		output, err := execCmd(cmd)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		}
+		ids = append(ids, string(output))
+		writeBytes("output.log", output)
 	}
-	writeBytes("output.log", output)
 
 	return rRestartContainer{
-		ContainerID: string(output),
+		ContainerID: strings.Join(ids, ","),
 		Error:       getErrorNotice(errs),
 	}
 }
