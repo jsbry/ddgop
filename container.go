@@ -22,7 +22,7 @@ func (a *App) GoStartContainer(containerID string) rStartContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container start %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerStart, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -47,7 +47,7 @@ func (a *App) GoStopContainer(containerID string) rStopContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container stop %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerStop, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -72,7 +72,7 @@ func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container rm -f %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerRemove, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -97,7 +97,7 @@ func (a *App) GoPauseContainer(containerID string) rPauseContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container pause %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerPause, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -122,7 +122,7 @@ func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container unpause %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerUnpause, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -147,7 +147,7 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf("docker container restart %s", id))
+		cmd := genCmd(fmt.Sprintf(dockerCmdContainerRestart, id))
 		output, err := execCmd(cmd)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -163,7 +163,7 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 }
 
 func (a *App) GoLogsContainer(containerID string) {
-	cmd := genCmd(fmt.Sprintf("docker container logs %s --timestamps -f", containerID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdContainerLogs, containerID))
 	res, stdout, err := execCmdPipe(cmd)
 	if err != nil {
 		runtime.LogErrorf(a.ctx, "failed to get stdout: %v", err)
@@ -191,7 +191,7 @@ type rInspectContainer struct {
 
 func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container inspect %s --format '{{json .}}'", containerID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdContainerInspect, containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -222,7 +222,7 @@ type rExecContainer struct {
 func (a *App) GoExecContainer(image string) rExecContainer {
 	var errs []error
 	command := "/bin/bash"
-	exec := fmt.Sprintf("docker container run -it --rm %s %s", image, command)
+	exec := fmt.Sprintf(dockerCmdContainerRun, image, command)
 	cmd := genCmd(exec)
 	res, stdout, err := execCmdPipe(cmd)
 	if err != nil {
@@ -236,7 +236,7 @@ func (a *App) GoExecContainer(image string) rExecContainer {
 	if len(errs) > 0 {
 		errs = []error{}
 		command = "/bin/sh"
-		exec = fmt.Sprintf("docker container run -it --rm %s %s", image, command)
+		exec = fmt.Sprintf(dockerCmdContainerRun, image, command)
 		cmd = genCmd(exec)
 		res, stdout, err = execCmdPipe(cmd)
 		if err != nil {
@@ -287,7 +287,7 @@ var lsReg = regexp.MustCompile(`^([d\-l][rwx\-]{9})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\
 
 func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container exec %s ls -la --time-style=\"+%%Y-%%m-%%d %%H:%%M:%%S\" %s", containerID, filepath))
+	cmd := genCmd(fmt.Sprintf(dockerCmdContainerExec, containerID, filepath))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -373,7 +373,7 @@ type rContainerStats struct {
 
 func (a *App) GoStatsContainer(containerID string) rContainerStats {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker container stats --no-trunc --no-stream --format '{{json .}}' %s", containerID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdContainerStats, containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

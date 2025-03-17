@@ -30,7 +30,7 @@ type NetworkJSON struct {
 
 func (a *App) GoNetworks() rNetworks {
 	var errs []error
-	cmd := genCmd("docker network ls --no-trunc --format '{{json .}}'")
+	cmd := genCmd(dockerCmdNetworkList)
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

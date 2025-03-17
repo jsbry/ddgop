@@ -11,7 +11,7 @@ type rDeleteImage struct {
 
 func (a *App) GoDeleteImage(containerID string) rDeleteImage {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker image rm -f %s", containerID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdImageRemove, containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

@@ -47,7 +47,7 @@ type ContainerJSON struct {
 
 func (a *App) GoContainers() rContainers {
 	var errs []error
-	cmd := genCmd("docker container ls -a --no-trunc --format '{{json .}}'")
+	cmd := genCmd(dockerCmdContainerList)
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -190,7 +190,7 @@ var memUsageTotalReg = regexp.MustCompile(`\s*\/\s*(\d+(\.\d+)?)\s*(B|KiB|MiB|Gi
 
 func (a *App) GoStatsContainers() rContainersStats {
 	var errs []error
-	cmd := genCmd("docker container stats -a --no-trunc --no-stream --format '{{json .}}'")
+	cmd := genCmd(dockerCmdContainersStats)
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

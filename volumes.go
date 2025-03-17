@@ -38,7 +38,7 @@ type VolumeJSON struct {
 
 func (a *App) GoVolumes() rVolumes {
 	var errs []error
-	cmd := genCmd("docker volume ls --format '{{json .}}'")
+	cmd := genCmd(dockerCmdVolumeList)
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

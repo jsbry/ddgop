@@ -11,7 +11,7 @@ type rDeleteNetwork struct {
 
 func (a *App) GoDeleteNetwork(networkID string) rDeleteNetwork {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker network rm -f %s", networkID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdNetworkRemove, networkID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

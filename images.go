@@ -50,7 +50,7 @@ var sizeUnitMap = map[string]float64{
 
 func (a *App) GoImages() rImages {
 	var errs []error
-	cmd := genCmd("docker image ls -a --no-trunc --format '{{json .}}'")
+	cmd := genCmd(dockerCmdImageList)
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))

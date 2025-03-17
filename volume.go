@@ -11,7 +11,7 @@ type rDeleteVolume struct {
 
 func (a *App) GoDeleteVolume(containerID string) rDeleteVolume {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf("docker volume rm -f %s", containerID))
+	cmd := genCmd(fmt.Sprintf(dockerCmdVolumeRemove, containerID))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
