@@ -100,6 +100,35 @@
     min-width: 100px;
     width: 100px;
 }
+.table-volumes th:nth-of-type(4),
+.table-volumes td:nth-of-type(4) {
+    min-width: 100px;
+    width: 100px;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background-color: #f7f9ff;
+}
+
+.table-networks th:nth-of-type(1) {
+    min-width: 100px;
+    width: 100px;
+}
+
+.table-networks th:nth-of-type(2) {
+    min-width: 130px;
+    width: 130px;
+}
+
+.table-networks th:nth-of-type(4),
+.table-networks td:nth-of-type(4) {
+    min-width: 100px;
+    width: 100px;
+    position: sticky;
+    right: 0;
+    z-index: 2;
+    background-color: #f7f9ff;
+}
 
 /* icon */
 .btn-icon {

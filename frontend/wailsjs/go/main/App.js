@@ -14,6 +14,10 @@ export function GoDeleteImage(arg1) {
   return window['go']['main']['App']['GoDeleteImage'](arg1);
 }
 
+export function GoDeleteNetwork(arg1) {
+  return window['go']['main']['App']['GoDeleteNetwork'](arg1);
+}
+
 export function GoDeleteVolume(arg1) {
   return window['go']['main']['App']['GoDeleteVolume'](arg1);
 }
@@ -36,6 +40,10 @@ export function GoInspectContainer(arg1) {
 
 export function GoLogsContainer(arg1) {
   return window['go']['main']['App']['GoLogsContainer'](arg1);
+}
+
+export function GoNetworks() {
+  return window['go']['main']['App']['GoNetworks']();
 }
 
 export function GoOpenConsole(arg1) {

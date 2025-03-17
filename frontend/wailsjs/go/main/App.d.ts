@@ -8,6 +8,8 @@ export function GoDeleteContainer(arg1:string):Promise<main.rDeleteContainer>;
 
 export function GoDeleteImage(arg1:string):Promise<main.rDeleteImage>;
 
+export function GoDeleteNetwork(arg1:string):Promise<main.rDeleteNetwork>;
+
 export function GoDeleteVolume(arg1:string):Promise<main.rDeleteVolume>;
 
 export function GoExecContainer(arg1:string):Promise<main.rExecContainer>;
@@ -19,6 +21,8 @@ export function GoImages():Promise<main.rImages>;
 export function GoInspectContainer(arg1:string):Promise<main.rInspectContainer>;
 
 export function GoLogsContainer(arg1:string):Promise<void>;
+
+export function GoNetworks():Promise<main.rNetworks>;
 
 export function GoOpenConsole(arg1:string):Promise<void>;
 

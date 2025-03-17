@@ -148,6 +148,22 @@ export namespace main {
 	        this.Size = source["Size"];
 	    }
 	}
+	export class Network {
+	    Name: string;
+	    NetworkID: string;
+	    Driver: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Network(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Name = source["Name"];
+	        this.NetworkID = source["NetworkID"];
+	        this.Driver = source["Driver"];
+	    }
+	}
 	export class Stats {
 	    CPUUsage: string;
 	    CPULimit: string;
@@ -320,6 +336,20 @@ export namespace main {
 	        this.Error = source["Error"];
 	    }
 	}
+	export class rDeleteNetwork {
+	    NetworkName: string;
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rDeleteNetwork(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.NetworkName = source["NetworkName"];
+	        this.Error = source["Error"];
+	    }
+	}
 	export class rDeleteVolume {
 	    VolumeName: string;
 	    Error?: string;
@@ -429,6 +459,38 @@ export namespace main {
 	        this.Inspect = source["Inspect"];
 	        this.Error = source["Error"];
 	    }
+	}
+	export class rNetworks {
+	    Networks: Network[];
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rNetworks(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Networks = this.convertValues(source["Networks"], Network);
+	        this.Error = source["Error"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class rPauseContainer {
 	    ContainerID: string;
