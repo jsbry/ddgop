@@ -189,6 +189,20 @@ type rInspectContainer struct {
 	Error   string `json:"Error,omitempty"`
 }
 
+type Inspect struct {
+	HostConfig HostConfig `json:"HostConfig"`
+}
+
+type HostConfig struct {
+	Mounts []Mount `json:"Mounts"`
+}
+
+type Mount struct {
+	Type   string `json:"Type"`
+	Source string `json:"Source"`
+	Target string `json:"Target"`
+}
+
 func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 	var errs []error
 	cmd := genCmd(fmt.Sprintf(dockerCmdContainerInspect, containerID))

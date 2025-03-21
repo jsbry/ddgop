@@ -1,5 +1,21 @@
 export namespace main {
 	
+	export class Mount {
+	    Type: string;
+	    Source: string;
+	    Target: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Mount(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Type = source["Type"];
+	        this.Source = source["Source"];
+	        this.Target = source["Target"];
+	    }
+	}
 	export class Container {
 	    ContainerID: string;
 	    Image: string;
@@ -10,6 +26,7 @@ export namespace main {
 	    Name: string;
 	    State: string;
 	    SubContainers: Container[];
+	    Mounts: Mount[];
 	
 	    static createFrom(source: any = {}) {
 	        return new Container(source);
@@ -26,6 +43,7 @@ export namespace main {
 	        this.Name = source["Name"];
 	        this.State = source["State"];
 	        this.SubContainers = this.convertValues(source["SubContainers"], Container);
+	        this.Mounts = this.convertValues(source["Mounts"], Mount);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -148,6 +166,7 @@ export namespace main {
 	        this.Size = source["Size"];
 	    }
 	}
+	
 	export class Network {
 	    Name: string;
 	    NetworkID: string;

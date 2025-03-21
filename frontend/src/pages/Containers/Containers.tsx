@@ -17,6 +17,12 @@ function Containers() {
   const [cpuLimit, setCPULimit] = useState<string>("--");
   const [id, setID] = useState<string>("");
 
+  type Mount = {
+    type: string;
+    target: string;
+    source: string;
+  };
+
   type TableCol = {
     containerID: string;
     image: string;
@@ -26,6 +32,7 @@ function Containers() {
     ports: string[];
     name: string;
     state: string;
+    mounts?: Mount[];
     subRows?: TableCol[];
   };
 
@@ -84,7 +91,7 @@ function Containers() {
     if (id == "") {
       const subRows = row.original.subRows;
       return (
-        <span className='text-secondary'>
+        <span className='text-black-50'>
           {subRows?.length} containers
         </span>
       )
@@ -103,6 +110,23 @@ function Containers() {
       </>
     )
   }, [copyTooltip]);
+
+  const renderImage = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const image = row.original.image;
+    const mounts = row.original.mounts;
+    return (
+      <>
+        {image}<br />
+        {mounts && mounts.map((v) => {
+          return (
+            <span className='text-black-50'>
+              {v.source}<br />
+            </span>
+          )
+        })}
+      </>
+    )
+  }, []);
 
   const renderPorts = useCallback(({ getValue }: CellContext<TableCol, string[]>) => {
     const ports = getValue();
@@ -134,20 +158,21 @@ function Containers() {
     const state = row.original.state;
     const name = row.original.name;
     const subRows = row.original.subRows;
+    let isGrouped = false;
     if (typeof subRows !== "undefined") {
+      isGrouped = true;
       id = subRows.map(c => c.containerID.slice(0, 12)).join(",");
     }
     return (
       <div className='input-group'>
-        <Button variant='light' className={`me-1 rounded-circle ${h.isExited(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id)}><FaPlay></FaPlay></Button>
-        <Button variant='light' className={`me-1 rounded-circle ${h.isPaused(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => unpauseContainer(id)}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${!h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id, state)}><FaPlay></FaPlay></Button>
         <Button variant='light' className={`me-1 rounded-circle ${h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id)}><FaStop></FaStop></Button>
         <Dropdown>
           <Dropdown.Toggle variant="light" className='me-1 rounded-circle'>
             <FaEllipsisVertical></FaEllipsisVertical>
           </Dropdown.Toggle>
           <Dropdown.Menu>
-            <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>
+            {!isGrouped && <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>}
             <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id, state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
             <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id)}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
           </Dropdown.Menu>
@@ -178,6 +203,7 @@ function Containers() {
     columnHelper.accessor((row) => row.image, {
       id: 'image',
       header: 'Image',
+      cell: renderImage,
     }),
     columnHelper.accessor((row) => row.ports, {
       id: 'ports',
@@ -246,6 +272,18 @@ function Containers() {
           name: container.Name,
           state: container.State,
         };
+        if (container.Mounts) {
+          let mounts: Mount[] = [];
+          container.Mounts.forEach((mount) => {
+            const m: Mount = {
+              type: mount.Type,
+              source: mount.Source,
+              target: mount.Target,
+            };
+            mounts.push(m);
+            t.mounts = mounts;
+          });
+        }
 
         if (container.SubContainers) {
           let subRows: TableCol[] = [];
@@ -260,6 +298,19 @@ function Containers() {
               name: container.Name,
               state: container.State,
             };
+            if (container.Mounts) {
+              let mounts: Mount[] = [];
+              container.Mounts.forEach((mount) => {
+                const m: Mount = {
+                  type: mount.Type,
+                  source: mount.Source,
+                  target: mount.Target,
+                };
+                mounts.push(m);
+                t.mounts = mounts;
+              });
+            }
+
             subRows.push(t);
           });
           t.subRows = subRows;
@@ -267,6 +318,8 @@ function Containers() {
 
         rows.push(t);
       });
+      console.log(rows);
+
       setData(rows);
     }).catch((err) => {
       console.log(err);
@@ -277,7 +330,7 @@ function Containers() {
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      console.log(d);
+      // console.log(d);
       d.ContainerStats.forEach((container) => {
         // TODO s
         const s = {
@@ -297,12 +350,17 @@ function Containers() {
     });
   };
 
-  const startContainer = async (id: string) => {
+  const startContainer = async (id: string, state: string) => {
     if (inactiveBtn) {
       return;
     }
     setInactiveBtn(true);
-    const result = GoStartContainer(id);
+    let result;
+    if (h.isPaused(state)) {
+      result = GoUnpauseContainer(id);
+    } else {
+      result = GoStartContainer(id);
+    }
     result.then((d) => {
       if (d.Error != null) {
         throw new Error(d.Error);
@@ -315,23 +373,23 @@ function Containers() {
     });
   };
 
-  const unpauseContainer = (id: string) => {
-    if (inactiveBtn) {
-      return;
-    }
-    setInactiveBtn(true);
-    const result = GoUnpauseContainer(id);
-    result.then((d) => {
-      if (d.Error != null) {
-        throw new Error(d.Error);
-      }
-    }).catch((err) => {
-      console.log(err);
-    }).finally(() => {
-      setInactiveBtn(false);
-      listContainer("");
-    });
-  };
+  // const unpauseContainer = (id: string) => {
+  //   if (inactiveBtn) {
+  //     return;
+  //   }
+  //   setInactiveBtn(true);
+  //   const result = GoUnpauseContainer(id);
+  //   result.then((d) => {
+  //     if (d.Error != null) {
+  //       throw new Error(d.Error);
+  //     }
+  //   }).catch((err) => {
+  //     console.log(err);
+  //   }).finally(() => {
+  //     setInactiveBtn(false);
+  //     listContainer("");
+  //   });
+  // };
 
   const stopContainer = async (id: string) => {
     if (inactiveBtn) {

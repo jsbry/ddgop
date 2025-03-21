@@ -26,6 +26,7 @@ type Container struct {
 	Name          string      `json:"Name"`
 	State         string      `json:"State"`
 	SubContainers []Container `json:"SubContainers"`
+	Mounts        []Mount     `json:"Mounts"`
 }
 
 type ContainerJSON struct {
@@ -86,6 +87,16 @@ func (a *App) GoContainers() rContainers {
 			Name:        cj.Names,
 			State:       cj.State,
 		}
+
+		inspect := a.GoInspectContainer(container.ContainerID)
+		if inspect.Error == "" {
+			v := Inspect{}
+			err := json.Unmarshal([]byte(inspect.Inspect), &v)
+			if err == nil {
+				container.Mounts = v.HostConfig.Mounts
+			}
+		}
+
 		containers = append(containers, container)
 	}
 
@@ -123,11 +134,19 @@ func groupByPrefix(data []Container) []Container {
 
 	containers := []Container{}
 	for _, parent := range keys {
+		pState := "exited"
 		state := "exited"
 		for _, child := range grouped[parent] {
+			if slices.Contains([]string{"paused"}, child.State) {
+				pState = "paused"
+			}
 			if slices.Contains([]string{"restarting", "running", "removing"}, child.State) {
 				state = "running"
+				break
 			}
+		}
+		if state == "exited" {
+			state = pState
 		}
 
 		container := Container{
