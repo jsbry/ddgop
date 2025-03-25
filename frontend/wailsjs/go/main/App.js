@@ -81,7 +81,3 @@ export function GoUnpauseContainer(arg1) {
 export function GoVolumes() {
   return window['go']['main']['App']['GoVolumes']();
 }
-
-export function Greet(arg1) {
-  return window['go']['main']['App']['Greet'](arg1);
-}

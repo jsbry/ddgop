@@ -1,11 +1,7 @@
 import { HiOutlineCube, HiOutlineCubeTransparent, HiOutlineWrench, HiOutlineWifi } from "react-icons/hi2";
 import { FaRegHdd } from "react-icons/fa";
 import { Badge } from 'react-bootstrap';
-
-type GProps = {
-  content: string;
-  setContent: React.Dispatch<React.SetStateAction<string>>;
-};
+import { GProps } from "../../pages/helper";
 
 function Sidebar(props: GProps) {
   const { content, setContent } = props;

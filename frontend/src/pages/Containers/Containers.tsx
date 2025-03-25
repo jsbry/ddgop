@@ -318,8 +318,6 @@ function Containers() {
 
         rows.push(t);
       });
-      console.log(rows);
-
       setData(rows);
     }).catch((err) => {
       console.log(err);

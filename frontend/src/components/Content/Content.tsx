@@ -4,11 +4,8 @@ import Images from '../../pages/Images/Images';
 import Volumes from '../../pages/Volumes/Volumes';
 import Networks from '../../pages/Networks/Networks';
 import Builds from '../../pages/Builds/Builds';
-
-type GProps = {
-  content: string;
-};
-
+import Config from '../../pages/Config/Config';
+import { GProps } from "../../pages/helper";
 
 function Content(props: GProps) {
   const { content } = props;
@@ -25,6 +22,8 @@ function Content(props: GProps) {
         return <Networks></Networks>;
       case 'Builds':
         return <Builds></Builds>;
+      case 'Config':
+        return <Config></Config>;
       default:
         return <Main></Main>;
     }

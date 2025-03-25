@@ -41,5 +41,3 @@ export function GoStopContainer(arg1:string):Promise<main.rStopContainer>;
 export function GoUnpauseContainer(arg1:string):Promise<main.rUnpauseContainer>;
 
 export function GoVolumes():Promise<main.rVolumes>;
-
-export function Greet(arg1:string):Promise<string>;

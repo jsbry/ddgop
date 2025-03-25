@@ -23,11 +23,6 @@ func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-// Greet returns a greeting for the given name
-func (a *App) Greet(name string) string {
-	return fmt.Sprintf("Hello %s, It's show time!", name)
-}
-
 var sizeReg = regexp.MustCompile(`(\d+(\.\d+)?)(B|KB|MB|GB|TB)`)
 
 const sizeNA = "N/A"

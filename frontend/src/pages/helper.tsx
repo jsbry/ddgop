@@ -1,5 +1,10 @@
 import { Tooltip } from 'react-bootstrap';
 
+export type GProps = {
+  content: string;
+  setContent: React.Dispatch<React.SetStateAction<string>>;
+};
+
 export const isExited = (state: string) => {
   switch (state) {
     case "created":
