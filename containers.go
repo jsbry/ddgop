@@ -3,12 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"runtime"
 	"slices"
 	"sort"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/docker/docker/api/types/container"
 )
 
 type rContainers struct {
@@ -22,11 +24,11 @@ type Container struct {
 	Command       string      `json:"Command"`
 	Created       string      `json:"Created"`
 	Status        string      `json:"Status"`
-	Ports         []string    `json:"Ports"`
+	Ports         []uint16    `json:"Ports"`
 	Name          string      `json:"Name"`
 	State         string      `json:"State"`
 	SubContainers []Container `json:"SubContainers"`
-	Mounts        []Mount     `json:"Mounts"`
+	Mounts        []string    `json:"Mounts"`
 }
 
 type ContainerJSON struct {
@@ -48,54 +50,47 @@ type ContainerJSON struct {
 
 func (a *App) GoContainers() rContainers {
 	var errs []error
-	cmd := genCmd(dockerCmdContainerList)
-	output, err := execCmd(cmd)
+
+	containerList, err := a.cli.ContainerList(a.ctx, container.ListOptions{
+		All: true,
+	})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("ContainerList err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	containers := []Container{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		var cj ContainerJSON
-		json.Unmarshal([]byte(line), &cj)
-
-		var ports []string
-		splitPorts := strings.Split(cj.Ports, ",")
-		if 0 < len(splitPorts) {
-			for _, p := range splitPorts {
-				p = strings.TrimSpace(p)
-				if strings.HasPrefix(p, "::") || strings.HasPrefix(p, "[::]") {
-					// IPv6
-					continue
-				}
-				ports = append(ports, p)
+	for _, c := range containerList {
+		var ports []uint16
+		for _, p := range c.Ports {
+			if slices.Contains([]string{"::", "[::]"}, p.IP) {
+				// IPv6
+				continue
+			}
+			if p.PublicPort > 0 {
+				ports = append(ports, p.PublicPort)
 			}
 		}
+		slices.Sort(ports)
 
 		container := Container{
-			ContainerID: cj.ID,
-			Image:       cj.Image,
-			Command:     cj.Command,
-			Created:     cj.CreatedAt,
-			Status:      cj.Status,
+			ContainerID: c.ID,
+			Image:       c.Image,
+			Command:     c.Command,
+			Created:     time.Unix(c.Created, 0).String(),
+			Status:      c.Status,
 			Ports:       ports,
-			Name:        cj.Names,
-			State:       cj.State,
+			Name:        c.Names[0][1:],
+			State:       c.State,
 		}
 
-		inspect := a.GoInspectContainer(container.ContainerID)
-		if inspect.Error == "" {
-			v := Inspect{}
-			err := json.Unmarshal([]byte(inspect.Inspect), &v)
-			if err == nil {
-				container.Mounts = v.HostConfig.Mounts
+		var mounts []string
+		for _, m := range c.Mounts {
+			if string(m.Type) != "volume" {
+				continue
 			}
+			mounts = append(mounts, m.Name)
 		}
+		container.Mounts = mounts
 
 		containers = append(containers, container)
 	}
@@ -151,7 +146,7 @@ func groupByPrefix(data []Container) []Container {
 
 		container := Container{
 			Name:          parent,
-			Ports:         []string{},
+			Ports:         []uint16{},
 			State:         state,
 			SubContainers: grouped[parent],
 		}
@@ -197,91 +192,54 @@ type ContainerStatsJSON struct {
 	PIDs      string `json:"PIDs"`
 }
 
-var unitMap = map[string]float64{
-	"B":   1,
-	"KiB": 1024,
-	"MiB": 1024 * 1024,
-	"GiB": 1024 * 1024 * 1024,
-}
-var cpuUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)%`)
-var memUsageReg = regexp.MustCompile(`(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
-var memUsageTotalReg = regexp.MustCompile(`\s*\/\s*(\d+(\.\d+)?)\s*(B|KiB|MiB|GiB|TiB)`)
-
 func (a *App) GoStatsContainers() rContainersStats {
 	var errs []error
-	cmd := genCmd(dockerCmdContainersStats)
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
-	}
-	writeBytes("output.log", output)
 
-	cpuUsage := 0.0
-	memUsage := 0.0
+	containerList, err := a.cli.ContainerList(a.ctx, container.ListOptions{
+		All: true,
+	})
+	if err != nil {
+		errs = append(errs, fmt.Errorf("ContainerList err: %s", err.Error()))
+	}
+
+	var cpuUsage float64
+	var memUsage uint64
 	stats := Stats{
 		MemUsage: "--",
 		MemLimit: "--",
 	}
 	containers := []ContainerStats{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
+	for _, c := range containerList {
+		containerStats, err := a.cli.ContainerStatsOneShot(a.ctx, c.ID)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("ContainerStatsOneShot err: %s", err.Error()))
+		}
+		defer containerStats.Body.Close()
+
+		var s container.StatsResponse
+		if err := json.NewDecoder(containerStats.Body).Decode(&s); err != nil {
+			errs = append(errs, fmt.Errorf("NewDecoder.Decode err: %s", err.Error()))
 			continue
 		}
-		var cj ContainerStatsJSON
-		json.Unmarshal([]byte(line), &cj)
 
 		container := ContainerStats{
-			ContainerID: cj.ID,
-			CPUPerc:     cj.CPUPerc,
-			MemPerc:     cj.MemPerc,
-			MemUsage:    cj.MemUsage,
+			ContainerID: c.ID,
+			CPUPerc:     fmt.Sprintf("%.2f %%", calculateCPUPercent(s.PreCPUStats, s.CPUStats)),
+			MemUsage:    fmt.Sprintf("%d", s.MemoryStats.Usage),
 		}
+		cpuUsage += calculateCPUPercent(s.PreCPUStats, s.CPUStats)
+		memUsage += s.MemoryStats.Usage
 
-		// CPU
-		match := cpuUsageReg.FindStringSubmatch(container.CPUPerc)
-		if len(match) < 3 {
-			errs = append(errs, fmt.Errorf("cpu match len < 3: %#v", container.CPUPerc))
-			continue
-		}
-		value, err := strconv.ParseFloat(match[1], 64)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("error parsing cpu value: %s", err.Error()))
-			continue
-		}
-		cpuUsage += value
-
-		// Memory
-		match = memUsageReg.FindStringSubmatch(container.MemUsage)
-		if len(match) < 4 {
-			errs = append(errs, fmt.Errorf("memory usage match len < 4: %s", container.MemUsage))
-			continue
-		}
-		value, err = strconv.ParseFloat(match[1], 64)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("error parsing memory value: %s", err.Error()))
-			continue
-		}
-		unit := match[3]
-		if multiplier, exists := unitMap[unit]; exists {
-			memUsage += value * multiplier
-		} else {
-			errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
-		}
-		match = memUsageTotalReg.FindStringSubmatch(container.MemUsage)
-		if len(match) < 4 {
-			errs = append(errs, fmt.Errorf("memory total match len < 4: %s", container.MemUsage))
-			continue
-		}
-		memLimit := fmt.Sprintf("%s %s", match[1], match[3])
-		if memLimit != "0 B" {
-			stats.MemLimit = memLimit
+		memLimit := s.MemoryStats.Limit
+		if memLimit != 0 {
+			stats.MemLimit = formatBytes(memLimit)
 		}
 
 		containers = append(containers, container)
 	}
-	stats.CPUUsage = fmt.Sprintf("%.2f%%", cpuUsage)
-	stats.MemUsage = formatSize(memUsage)
+
+	stats.CPUUsage = fmt.Sprintf("%.2f %%", cpuUsage)
+	stats.MemUsage = formatBytes(memUsage)
 
 	CPULimit, err := getCPULimit()
 	if err != nil {
@@ -294,6 +252,17 @@ func (a *App) GoStatsContainers() rContainersStats {
 		ContainerStats: containers,
 		Error:          getErrorNotice(errs),
 	}
+}
+
+func calculateCPUPercent(previous, current container.CPUStats) float64 {
+	cpuDelta := float64(current.CPUUsage.TotalUsage - previous.CPUUsage.TotalUsage)
+	systemDelta := float64(current.SystemUsage - previous.SystemUsage)
+
+	cpuCount := current.OnlineCPUs
+	if systemDelta > 0 && cpuCount > 0 {
+		return (cpuDelta / systemDelta) * float64(cpuCount) * 100.0
+	}
+	return 0.0
 }
 
 func getCPULimit() (int, error) {

@@ -26,7 +26,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
   const [cpuLimit, setCPULimit] = useState<string>("--");
 
   useEffect(() => {
-    execContainer(image);
+    // execContainer(image);
+    execContainer(id);
     inspectContainer(id);
   }, []);
 
@@ -262,8 +263,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     });
   };
 
-  const execContainer = (image: string) => {
-    const resultExec = GoExecContainer(image);
+  const execContainer = (id: string) => {
+    const resultExec = GoExecContainer(id.slice(0, 12));
     resultExec.then((d) => {
       console.log(d);
       if (d.Error != null) {

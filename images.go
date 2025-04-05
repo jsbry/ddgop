@@ -41,7 +41,7 @@ type ImageJSON struct {
 	VirtualSize  string `json:"VirtualSize"`
 }
 
-var sizeUnitMap = map[string]float64{
+var sizeUnitMap = map[string]uint64{
 	"B":  1,
 	"KB": 1024,
 	"MB": 1024 * 1024,
@@ -57,7 +57,7 @@ func (a *App) GoImages() rImages {
 	}
 	writeBytes("output.log", output)
 
-	size := 0.0
+	var size uint64
 	stats := ImageStats{
 		Size: "--",
 	}
@@ -90,7 +90,7 @@ func (a *App) GoImages() rImages {
 				errs = append(errs, fmt.Errorf("size match len < 4: %s", image.Size))
 				continue
 			}
-			value, err := strconv.ParseFloat(match[1], 64)
+			value, err := strconv.ParseUint(match[1], 10, 64)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
 				continue
@@ -104,7 +104,7 @@ func (a *App) GoImages() rImages {
 		}
 		images = append(images, image)
 	}
-	stats.Size = formatSize(size)
+	stats.Size = formatBytes(size)
 
 	return rImages{
 		Images: images,

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -22,13 +23,10 @@ func (a *App) GoStartContainer(containerID string) rStartContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerStart, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerStart(a.ctx, id, container.StartOptions{})
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerStart err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rStartContainer{
@@ -47,13 +45,10 @@ func (a *App) GoStopContainer(containerID string) rStopContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerStop, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerStop(a.ctx, id, container.StopOptions{})
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerStop err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rStopContainer{
@@ -72,13 +67,10 @@ func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerRemove, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerRemove(a.ctx, id, container.RemoveOptions{})
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerRemove err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rDeleteContainer{
@@ -97,13 +89,10 @@ func (a *App) GoPauseContainer(containerID string) rPauseContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerPause, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerPause(a.ctx, id)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerPause err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rPauseContainer{
@@ -122,13 +111,10 @@ func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerUnpause, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerUnpause(a.ctx, id)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerUnpause err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rUnpauseContainer{
@@ -147,13 +133,10 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 	var ids []string
 	list := strings.Split(containerID, ",")
 	for _, id := range list {
-		cmd := genCmd(fmt.Sprintf(dockerCmdContainerRestart, id))
-		output, err := execCmd(cmd)
+		err := a.cli.ContainerRestart(a.ctx, id, container.StopOptions{})
 		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+			errs = append(errs, fmt.Errorf("ContainerUnpause err: %s", err.Error()))
 		}
-		ids = append(ids, string(output))
-		writeBytes("output.log", output)
 	}
 
 	return rRestartContainer{
@@ -189,92 +172,42 @@ type rInspectContainer struct {
 	Error   string `json:"Error,omitempty"`
 }
 
-type Inspect struct {
-	HostConfig HostConfig `json:"HostConfig"`
-}
-
-type HostConfig struct {
-	Mounts []Mount `json:"Mounts"`
-}
-
-type Mount struct {
-	Type   string `json:"Type"`
-	Source string `json:"Source"`
-	Target string `json:"Target"`
-}
-
 func (a *App) GoInspectContainer(containerID string) rInspectContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdContainerInspect, containerID))
-	output, err := execCmd(cmd)
+	var b []byte
+	inspect, err := a.cli.ContainerInspect(a.ctx, containerID)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
-	}
-	writeBytes("output.log", output)
-
-	var inspect string
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
+		errs = append(errs, fmt.Errorf("ContainerInspect err: %s", err.Error()))
+	} else {
+		b, err = json.Marshal(inspect)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("json.Marshal err: %s", err.Error()))
 		}
-		inspect = line
 	}
-
 	return rInspectContainer{
-		Inspect: inspect,
+		Inspect: string(b),
 		Error:   getErrorNotice(errs),
 	}
 }
 
 type rExecContainer struct {
-	Exec    string `json:"Exec"`
 	Command string `json:"Command"`
 	Error   string `json:"Error,omitempty"`
 }
 
-func (a *App) GoExecContainer(image string) rExecContainer {
+func (a *App) GoExecContainer(containerID string) rExecContainer {
 	var errs []error
-	command := "/bin/bash"
-	exec := fmt.Sprintf(dockerCmdContainerRun, image, command)
-	cmd := genCmd(exec)
-	res, stdout, err := execCmdPipe(cmd)
+	command := []string{"/bin/bash"}
+
+	_, err := a.cli.ContainerExecCreate(a.ctx, containerID, container.ExecOptions{
+		Cmd: command,
+	})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmdPipe err: %s", err.Error()))
-	} else {
-		if err := res.Start(); err != nil {
-			errs = append(errs, fmt.Errorf("failed to start command: %s", err.Error()))
-		}
-	}
-
-	if len(errs) > 0 {
-		errs = []error{}
-		command = "/bin/sh"
-		exec = fmt.Sprintf(dockerCmdContainerRun, image, command)
-		cmd = genCmd(exec)
-		res, stdout, err = execCmdPipe(cmd)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("execCmdPipe err: %s", err.Error()))
-		} else {
-			if err := res.Start(); err != nil {
-				errs = append(errs, fmt.Errorf("failed to start command: %s", err.Error()))
-			}
-		}
-	}
-
-	if len(errs) == 0 {
-		scanner := bufio.NewScanner(stdout)
-		for scanner.Scan() {
-			line := scanner.Text()
-			runtime.EventsEmit(a.ctx, "exec", line)
-		}
-
-		res.Wait()
+		errs = append(errs, fmt.Errorf("ContainerInspect err: %s", err.Error()))
 	}
 
 	return rExecContainer{
-		Exec:    exec,
-		Command: command,
+		Command: command[0],
 		Error:   getErrorNotice(errs),
 	}
 }
@@ -301,7 +234,7 @@ var lsReg = regexp.MustCompile(`^([d\-l][rwx\-]{9})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\
 
 func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContainer {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdContainerExec, containerID, filepath))
+	cmd := genCmd(fmt.Sprintf(dockerCmdContainerExecLS, containerID, filepath))
 	output, err := execCmd(cmd)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
@@ -332,7 +265,7 @@ func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContai
 			continue
 		}
 
-		size, err := strconv.ParseFloat(matches[5], 64)
+		size, err := strconv.ParseUint(matches[5], 10, 64)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("size strconv.ParseInt err: %s", err.Error()))
 			continue
@@ -353,7 +286,7 @@ func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContai
 			Links:        links,
 			Owner:        matches[3],
 			Group:        matches[4],
-			Size:         formatSize(size),
+			Size:         formatBytes(size),
 			ModifiedAt:   matches[6],
 			Name:         name,
 			AbsolutePath: absolutePath,
@@ -387,28 +320,27 @@ type rContainerStats struct {
 
 func (a *App) GoStatsContainer(containerID string) rContainerStats {
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdContainerStats, containerID))
-	output, err := execCmd(cmd)
+	containerStats, err := a.cli.ContainerStatsOneShot(a.ctx, containerID)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("ContainerStatsOneShot err: %s", err.Error()))
+		return rContainerStats{
+			ContainerStats: ContainerStats{
+				ContainerID: containerID,
+			},
+			Error: getErrorNotice(errs),
+		}
 	}
-	writeBytes("output.log", output)
+	defer containerStats.Body.Close()
 
-	container := ContainerStats{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		var cj ContainerStatsJSON
-		json.Unmarshal([]byte(line), &cj)
+	var s container.StatsResponse
+	if err := json.NewDecoder(containerStats.Body).Decode(&s); err != nil {
+		errs = append(errs, fmt.Errorf("NewDecoder.Decode err: %s", err.Error()))
+	}
 
-		container = ContainerStats{
-			ContainerID: cj.ID,
-			CPUPerc:     cj.CPUPerc,
-			MemPerc:     cj.MemPerc,
-			MemUsage:    cj.MemUsage,
-		}
+	container := ContainerStats{
+		ContainerID: containerID,
+		CPUPerc:     fmt.Sprintf("%.2f %%", calculateCPUPercent(s.PreCPUStats, s.CPUStats)),
+		MemUsage:    formatBytes(s.MemoryStats.Usage),
 	}
 
 	CPULimit, err := getCPULimit()

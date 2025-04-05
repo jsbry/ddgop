@@ -17,22 +17,16 @@ function Containers() {
   const [cpuLimit, setCPULimit] = useState<string>("--");
   const [id, setID] = useState<string>("");
 
-  type Mount = {
-    type: string;
-    target: string;
-    source: string;
-  };
-
   type TableCol = {
     containerID: string;
     image: string;
     command: string;
     created: string;
     status: string;
-    ports: string[];
+    ports: number[];
     name: string;
     state: string;
-    mounts?: Mount[];
+    mounts?: string[];
     subRows?: TableCol[];
   };
 
@@ -120,7 +114,7 @@ function Containers() {
         {mounts && mounts.map((v) => {
           return (
             <span className='text-black-50'>
-              {v.source}<br />
+              {v}<br />
             </span>
           )
         })}
@@ -128,25 +122,21 @@ function Containers() {
     )
   }, []);
 
-  const renderPorts = useCallback(({ getValue }: CellContext<TableCol, string[]>) => {
+  const renderPorts = useCallback(({ getValue }: CellContext<TableCol, number[]>) => {
     const ports = getValue();
     const host = "localhost"
-    let scheme = "http"
+    if (!ports) {
+      return <></>
+    }
     return (
       <>
-        {ports.map((v, i) => {
-          const ret = v.match(/->(.*)\/tcp/);
-          if (ret && ret.length > 1) {
-            const port = ret[1];
-            if (port == "443") {
-              scheme = "https"
-            }
-            return (
-              <a key={i} href={scheme + "://" + host + ":" + port} target='_blank'>:{port}<br /></a>
-            )
+        {ports.map((port, i) => {
+          let scheme = "http"
+          if (port == 443) {
+            scheme = "https"
           }
           return (
-            <span key={i}>{v}<br /></span>
+            <a key={i} href={scheme + "://" + host + ":" + port} target='_blank'>:{port}<br /></a>
           )
         })}
       </>
@@ -202,7 +192,7 @@ function Containers() {
     }),
     columnHelper.accessor((row) => row.image, {
       id: 'image',
-      header: 'Image',
+      header: 'Image / Volume',
       cell: renderImage,
     }),
     columnHelper.accessor((row) => row.ports, {
@@ -257,6 +247,7 @@ function Containers() {
 
     const result = GoContainers();
     result.then((d) => {
+      // console.log(d);
       if (d.Error != null) {
         throw new Error(d.Error);
       }
@@ -271,19 +262,8 @@ function Containers() {
           ports: container.Ports,
           name: container.Name,
           state: container.State,
+          mounts: container.Mounts,
         };
-        if (container.Mounts) {
-          let mounts: Mount[] = [];
-          container.Mounts.forEach((mount) => {
-            const m: Mount = {
-              type: mount.Type,
-              source: mount.Source,
-              target: mount.Target,
-            };
-            mounts.push(m);
-            t.mounts = mounts;
-          });
-        }
 
         if (container.SubContainers) {
           let subRows: TableCol[] = [];
@@ -297,19 +277,8 @@ function Containers() {
               ports: container.Ports,
               name: container.Name,
               state: container.State,
+              mounts: container.Mounts,
             };
-            if (container.Mounts) {
-              let mounts: Mount[] = [];
-              container.Mounts.forEach((mount) => {
-                const m: Mount = {
-                  type: mount.Type,
-                  source: mount.Source,
-                  target: mount.Target,
-                };
-                mounts.push(m);
-                t.mounts = mounts;
-              });
-            }
 
             subRows.push(t);
           });
@@ -328,7 +297,7 @@ function Containers() {
       if (d.Error != null) {
         throw new Error(d.Error);
       }
-      // console.log(d);
+      console.log(d);
       d.ContainerStats.forEach((container) => {
         // TODO s
         const s = {
@@ -370,24 +339,6 @@ function Containers() {
       listContainer("");
     });
   };
-
-  // const unpauseContainer = (id: string) => {
-  //   if (inactiveBtn) {
-  //     return;
-  //   }
-  //   setInactiveBtn(true);
-  //   const result = GoUnpauseContainer(id);
-  //   result.then((d) => {
-  //     if (d.Error != null) {
-  //       throw new Error(d.Error);
-  //     }
-  //   }).catch((err) => {
-  //     console.log(err);
-  //   }).finally(() => {
-  //     setInactiveBtn(false);
-  //     listContainer("");
-  //   });
-  // };
 
   const stopContainer = async (id: string) => {
     if (inactiveBtn) {

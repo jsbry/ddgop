@@ -2,14 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/docker/docker/client"
 )
 
 // App struct
 type App struct {
 	ctx context.Context
+	cli *client.Client
 }
 
 // NewApp creates a new App application struct
@@ -21,38 +23,21 @@ func NewApp() *App {
 // so we can call the runtime methods
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
+
+	var err error
+	a.cli, err = client.NewClientWithOpts(
+		client.WithHost("tcp://localhost:2375"),
+		client.WithAPIVersionNegotiation(),
+	)
+	if err != nil {
+		panic(err)
+	}
+	a.cli.NegotiateAPIVersion(ctx)
 }
 
 var sizeReg = regexp.MustCompile(`(\d+(\.\d+)?)(B|KB|MB|GB|TB)`)
 
 const sizeNA = "N/A"
-
-func formatSize(bytes float64) string {
-	const (
-		KiB = 1024.0
-		MiB = 1024.0 * KiB
-		GiB = 1024.0 * MiB
-	)
-
-	var unit string
-	var value float64
-
-	if bytes >= GiB {
-		unit = "GiB"
-		value = bytes / GiB
-	} else if bytes >= MiB {
-		unit = "MiB"
-		value = bytes / MiB
-	} else if bytes >= KiB {
-		unit = "KiB"
-		value = bytes / KiB
-	} else {
-		unit = "B"
-		value = bytes
-	}
-
-	return fmt.Sprintf("%.2f %s", value, unit)
-}
 
 func getErrorNotice(errs []error) string {
 	var n []string

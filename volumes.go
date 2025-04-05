@@ -45,7 +45,7 @@ func (a *App) GoVolumes() rVolumes {
 	}
 	writeBytes("output.log", output)
 
-	size := 0.0
+	var size uint64
 	stats := VolumeStats{
 		Size: "--",
 	}
@@ -71,7 +71,7 @@ func (a *App) GoVolumes() rVolumes {
 				errs = append(errs, fmt.Errorf("size match len < 4: %s", volume.Size))
 				continue
 			}
-			value, err := strconv.ParseFloat(match[1], 64)
+			value, err := strconv.ParseUint(match[1], 10, 64)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
 				continue
@@ -85,7 +85,7 @@ func (a *App) GoVolumes() rVolumes {
 		}
 		volumes = append(volumes, volume)
 	}
-	stats.Size = formatSize(size)
+	stats.Size = formatBytes(size)
 
 	return rVolumes{
 		Volumes: volumes,
