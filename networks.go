@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"strings"
+
+	"github.com/docker/docker/api/types/network"
 )
 
 type rNetworks struct {
@@ -29,27 +29,20 @@ type NetworkJSON struct {
 }
 
 func (a *App) GoNetworks() rNetworks {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(dockerCmdNetworkList)
-	output, err := execCmd(cmd)
+	networkList, err := a.cli.NetworkList(a.ctx, network.ListOptions{})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("NetworkList err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	networks := []Network{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		var nj NetworkJSON
-		json.Unmarshal([]byte(line), &nj)
-
+	for _, n := range networkList {
 		network := Network{
-			Name:      nj.Name,
-			NetworkID: nj.ID,
-			Driver:    nj.Driver,
+			Name:      n.Name,
+			NetworkID: n.ID,
+			Driver:    n.Driver,
 		}
 
 		networks = append(networks, network)

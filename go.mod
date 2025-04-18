@@ -6,6 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/docker/docker v28.0.4+incompatible
+	github.com/pelletier/go-toml/v2 v2.2.4
 	github.com/wailsapp/wails/v2 v2.9.3
 )
 

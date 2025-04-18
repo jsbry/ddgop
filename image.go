@@ -2,24 +2,28 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/docker/docker/api/types/image"
 )
 
 type rDeleteImage struct {
-	ImageID string `json:"ImageID"`
-	Error   string `json:"Error,omitempty"`
+	Images []image.DeleteResponse `json:"Images"`
+	Error  string                 `json:"Error,omitempty"`
 }
 
-func (a *App) GoDeleteImage(containerID string) rDeleteImage {
+func (a *App) GoDeleteImage(imageID string, force bool) rDeleteImage {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdImageRemove, containerID))
-	output, err := execCmd(cmd)
+	imageList, err := a.cli.ImageRemove(a.ctx, imageID, image.RemoveOptions{
+		Force: force,
+	})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("ImageRemove err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	return rDeleteImage{
-		ImageID: string(output),
-		Error:   getErrorNotice(errs),
+		Images: imageList,
+		Error:  getErrorNotice(errs),
 	}
 }

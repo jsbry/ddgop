@@ -2,8 +2,7 @@ package main
 
 import (
 	"context"
-	"regexp"
-	"strings"
+	"log/slog"
 
 	"github.com/docker/docker/client"
 )
@@ -24,25 +23,29 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 
-	var err error
-	a.cli, err = client.NewClientWithOpts(
-		client.WithHost("tcp://localhost:2375"),
-		client.WithAPIVersionNegotiation(),
-	)
-	if err != nil {
-		panic(err)
-	}
-	a.cli.NegotiateAPIVersion(ctx)
+	a.setDocker()
 }
 
-var sizeReg = regexp.MustCompile(`(\d+(\.\d+)?)(B|KB|MB|GB|TB)`)
-
-const sizeNA = "N/A"
-
-func getErrorNotice(errs []error) string {
-	var n []string
-	for _, errs := range errs {
-		n = append(n, errs.Error())
+func (a *App) setDocker() {
+	var err error
+	opt := []client.Opt{
+		client.WithAPIVersionNegotiation(),
 	}
-	return strings.Join(n, "\n")
+	switch cfg.WithHostType {
+	case HostTypeInHost:
+		opt = append(opt, client.FromEnv)
+	case HostTypeTcp:
+		opt = append(opt, client.WithHost(cfg.WithHost))
+	}
+	a.cli, err = client.NewClientWithOpts(opt...)
+	if err != nil {
+		slog.Error("NewClientWithOpts", slog.Any("error", err))
+	}
+	a.cli.NegotiateAPIVersion(a.ctx)
+}
+
+func safeRecover() {
+	if r := recover(); r != nil {
+		slog.Error("panic recover", slog.Any("error", r))
+	}
 }

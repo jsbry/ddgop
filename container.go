@@ -2,14 +2,17 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -19,6 +22,8 @@ type rStartContainer struct {
 }
 
 func (a *App) GoStartContainer(containerID string) rStartContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -41,6 +46,8 @@ type rStopContainer struct {
 }
 
 func (a *App) GoStopContainer(containerID string) rStopContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -63,6 +70,8 @@ type rDeleteContainer struct {
 }
 
 func (a *App) GoDeleteContainer(containerID string) rDeleteContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -85,6 +94,8 @@ type rPauseContainer struct {
 }
 
 func (a *App) GoPauseContainer(containerID string) rPauseContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -107,6 +118,8 @@ type rUnpauseContainer struct {
 }
 
 func (a *App) GoUnpauseContainer(containerID string) rUnpauseContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -129,6 +142,8 @@ type rRestartContainer struct {
 }
 
 func (a *App) GoRestartContainer(containerID string) rRestartContainer {
+	defer safeRecover()
+
 	var errs []error
 	var ids []string
 	list := strings.Split(containerID, ",")
@@ -146,25 +161,31 @@ func (a *App) GoRestartContainer(containerID string) rRestartContainer {
 }
 
 func (a *App) GoLogsContainer(containerID string) {
-	cmd := genCmd(fmt.Sprintf(dockerCmdContainerLogs, containerID))
-	res, stdout, err := execCmdPipe(cmd)
+	defer safeRecover()
+
+	containerLogs, err := a.cli.ContainerLogs(a.ctx, containerID, container.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Timestamps: true,
+		Tail:       "25",
+	})
 	if err != nil {
-		runtime.LogErrorf(a.ctx, "failed to get stdout: %v", err)
+		slog.Error("ContainerLogs", slog.Any("error", err))
 		return
 	}
+	defer containerLogs.Close()
 
-	if err := res.Start(); err != nil {
-		runtime.LogErrorf(a.ctx, "failed to start command: %v", err)
+	var buf bytes.Buffer
+	_, err = stdcopy.StdCopy(&buf, &buf, containerLogs)
+	if err != nil {
+		slog.Error("stdcopy.StdCopy", slog.Any("error", err))
 		return
 	}
-
-	scanner := bufio.NewScanner(stdout)
+	scanner := bufio.NewScanner(&buf)
 	for scanner.Scan() {
 		line := scanner.Text()
 		runtime.EventsEmit(a.ctx, "log", line)
 	}
-
-	res.Wait()
 }
 
 type rInspectContainer struct {
@@ -173,6 +194,8 @@ type rInspectContainer struct {
 }
 
 func (a *App) GoInspectContainer(containerID string) rInspectContainer {
+	defer safeRecover()
+
 	var errs []error
 	var b []byte
 	inspect, err := a.cli.ContainerInspect(a.ctx, containerID)
@@ -196,6 +219,8 @@ type rExecContainer struct {
 }
 
 func (a *App) GoExecContainer(containerID string) rExecContainer {
+	defer safeRecover()
+
 	var errs []error
 	command := []string{"/bin/bash"}
 
@@ -233,16 +258,37 @@ type File struct {
 var lsReg = regexp.MustCompile(`^([d\-l][rwx\-]{9})\s+(\d+)\s+(\S+)\s+(\S+)\s+(\d+)\s+(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\s+(.+)$`)
 
 func (a *App) GoFilesContainer(containerID string, filepath string) rFilesContainer {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdContainerExecLS, containerID, filepath))
-	output, err := execCmd(cmd)
-	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+	cmd := []string{"ls", "-la", "--time-style=+%Y-%m-%d %H:%M:%S", filepath}
+	config := container.ExecOptions{
+		AttachStderr: true,
+		AttachStdout: true,
+		Tty:          true,
+		Cmd:          cmd,
 	}
-	writeBytes("output.log", output)
+
+	IDResp, err := a.cli.ContainerExecCreate(a.ctx, containerID, config)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("ContainerExecCreate err: %s", err.Error()))
+	}
+
+	resp, err := a.cli.ContainerExecAttach(a.ctx, IDResp.ID, container.ExecAttachOptions{})
+	if err != nil {
+		errs = append(errs, fmt.Errorf("ContainerExecAttach err: %s", err.Error()))
+	}
+	defer func() {
+		if err := resp.Conn.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("resp.Conn.Close err: %s", err.Error()))
+		}
+	}()
+
+	var stdoutBuf, stderrBuf bytes.Buffer
+	stdcopy.StdCopy(&stdoutBuf, &stderrBuf, resp.Reader)
 
 	var files []File
-	lines := strings.Split(string(output), "\n")
+	lines := strings.Split(stdoutBuf.String(), "\r\n")
 	for _, line := range lines[1:] {
 		if line == "" {
 			continue
@@ -319,6 +365,8 @@ type rContainerStats struct {
 }
 
 func (a *App) GoStatsContainer(containerID string) rContainerStats {
+	defer safeRecover()
+
 	var errs []error
 	containerStats, err := a.cli.ContainerStatsOneShot(a.ctx, containerID)
 	if err != nil {

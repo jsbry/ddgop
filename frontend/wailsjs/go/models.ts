@@ -1,3 +1,22 @@
+export namespace image {
+	
+	export class DeleteResponse {
+	    Deleted?: string;
+	    Untagged?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DeleteResponse(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Deleted = source["Deleted"];
+	        this.Untagged = source["Untagged"];
+	    }
+	}
+
+}
+
 export namespace main {
 	
 	export class Container {
@@ -212,6 +231,24 @@ export namespace main {
 	        this.Size = source["Size"];
 	    }
 	}
+	export class rConfig {
+	    WithHostType: number;
+	    WithHost: string;
+	    Modified: string;
+	    Error?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new rConfig(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.WithHostType = source["WithHostType"];
+	        this.WithHost = source["WithHost"];
+	        this.Modified = source["Modified"];
+	        this.Error = source["Error"];
+	    }
+	}
 	export class rContainerStats {
 	    ContainerStats: ContainerStats;
 	    Error?: string;
@@ -325,7 +362,7 @@ export namespace main {
 	    }
 	}
 	export class rDeleteImage {
-	    ImageID: string;
+	    Images: image.DeleteResponse[];
 	    Error?: string;
 	
 	    static createFrom(source: any = {}) {
@@ -334,9 +371,27 @@ export namespace main {
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.ImageID = source["ImageID"];
+	        this.Images = this.convertValues(source["Images"], image.DeleteResponse);
 	        this.Error = source["Error"];
 	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
 	}
 	export class rDeleteNetwork {
 	    NetworkName: string;

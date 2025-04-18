@@ -49,8 +49,9 @@ type ContainerJSON struct {
 }
 
 func (a *App) GoContainers() rContainers {
-	var errs []error
+	defer safeRecover()
 
+	var errs []error
 	containerList, err := a.cli.ContainerList(a.ctx, container.ListOptions{
 		All: true,
 	})
@@ -76,7 +77,7 @@ func (a *App) GoContainers() rContainers {
 			ContainerID: c.ID,
 			Image:       c.Image,
 			Command:     c.Command,
-			Created:     time.Unix(c.Created, 0).String(),
+			Created:     time.Unix(c.Created, 0).Format("2006-01-02 15:04:05"),
 			Status:      c.Status,
 			Ports:       ports,
 			Name:        c.Names[0][1:],
@@ -193,8 +194,9 @@ type ContainerStatsJSON struct {
 }
 
 func (a *App) GoStatsContainers() rContainersStats {
-	var errs []error
+	defer safeRecover()
 
+	var errs []error
 	containerList, err := a.cli.ContainerList(a.ctx, container.ListOptions{
 		All: true,
 	})
@@ -280,7 +282,6 @@ func getCPULimit() (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("execCmd err: %s", err.Error())
 	}
-	writeBytes("output.log", output)
 
 	var CPULimit int
 	lines := strings.Split(string(output), "\n")

@@ -1,10 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
-	"strings"
+
+	"github.com/docker/docker/api/types/volume"
 )
 
 type rVolumes struct {
@@ -37,53 +36,36 @@ type VolumeJSON struct {
 }
 
 func (a *App) GoVolumes() rVolumes {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(dockerCmdVolumeList)
-	output, err := execCmd(cmd)
+	volumeList, err := a.cli.VolumeList(a.ctx, volume.ListOptions{})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("VolumeList err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	var size uint64
 	stats := VolumeStats{
 		Size: "--",
 	}
 	volumes := []Volume{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		var vj VolumeJSON
-		json.Unmarshal([]byte(line), &vj)
+	if 0 < len(volumeList.Volumes) {
+		for _, v := range volumeList.Volumes {
+			volume := Volume{
+				Name:   v.Name,
+				Driver: v.Driver,
+				Size:   "--",
+			}
 
-		volume := Volume{
-			Name:   vj.Name,
-			Driver: vj.Driver,
-			Size:   vj.Size,
-		}
+			// v.Mountpoint
+			// Permission denied
+			if v.UsageData != nil {
+				volume.Size = formatBytes(uint64(v.UsageData.Size))
+				size += uint64(v.UsageData.Size)
+			}
 
-		// Size
-		if volume.Size != sizeNA {
-			match := sizeReg.FindStringSubmatch(volume.Size)
-			if len(match) < 4 {
-				errs = append(errs, fmt.Errorf("size match len < 4: %s", volume.Size))
-				continue
-			}
-			value, err := strconv.ParseUint(match[1], 10, 64)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
-				continue
-			}
-			unit := match[3]
-			if multiplier, exists := sizeUnitMap[unit]; exists {
-				size += value * multiplier
-			} else {
-				errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
-			}
+			volumes = append(volumes, volume)
 		}
-		volumes = append(volumes, volume)
 	}
 	stats.Size = formatBytes(size)
 

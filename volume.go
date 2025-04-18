@@ -9,17 +9,17 @@ type rDeleteVolume struct {
 	Error      string `json:"Error,omitempty"`
 }
 
-func (a *App) GoDeleteVolume(containerID string) rDeleteVolume {
+func (a *App) GoDeleteVolume(volumeID string) rDeleteVolume {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(fmt.Sprintf(dockerCmdVolumeRemove, containerID))
-	output, err := execCmd(cmd)
+	err := a.cli.VolumeRemove(a.ctx, volumeID, false)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("VolumeRemove err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	return rDeleteVolume{
-		VolumeName: string(output),
+		VolumeName: volumeID,
 		Error:      getErrorNotice(errs),
 	}
 }

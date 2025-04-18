@@ -1,11 +1,11 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/docker/docker/api/types/image"
 )
 
 type rImages struct {
@@ -41,67 +41,37 @@ type ImageJSON struct {
 	VirtualSize  string `json:"VirtualSize"`
 }
 
-var sizeUnitMap = map[string]uint64{
-	"B":  1,
-	"KB": 1024,
-	"MB": 1024 * 1024,
-	"GB": 1024 * 1024 * 1024,
-}
-
 func (a *App) GoImages() rImages {
+	defer safeRecover()
+
 	var errs []error
-	cmd := genCmd(dockerCmdImageList)
-	output, err := execCmd(cmd)
+	imageList, err := a.cli.ImageList(a.ctx, image.ListOptions{})
 	if err != nil {
-		errs = append(errs, fmt.Errorf("execCmd err: %s", err.Error()))
+		errs = append(errs, fmt.Errorf("ImageList err: %s", err.Error()))
 	}
-	writeBytes("output.log", output)
 
 	var size uint64
 	stats := ImageStats{
 		Size: "--",
 	}
 	images := []Image{}
-	lines := strings.Split(string(output), "\n")
-	for _, line := range lines {
-		if line == "" {
-			continue
+	for _, i := range imageList {
+		repoTags := []string{"<none>", "<none>"}
+		if 0 < len(i.RepoTags) {
+			repoTags = strings.Split(i.RepoTags[0], ":")
+			if len(repoTags) < 2 {
+				repoTags = append(repoTags, "<none>")
+			}
 		}
-		var ij ImageJSON
-		json.Unmarshal([]byte(line), &ij)
 
-		parsedTime, err := time.Parse("2006-01-02 15:04:05 -0700 MST", ij.CreatedAt)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("time.Parse err: %s", err.Error()))
-			continue
-		}
 		image := Image{
-			Name:      ij.Repository,
-			Tag:       ij.Tag,
-			CreatedAt: parsedTime.Format("2006-01-02 15:04:05"),
-			Size:      ij.Size,
-			ImageID:   ij.ID,
+			Name:      repoTags[0],
+			Tag:       repoTags[1],
+			CreatedAt: time.Unix(i.Created, 0).Format("2006-01-02 15:04:05"),
+			Size:      formatBytes(uint64(i.Size)),
+			ImageID:   i.ID,
 		}
-
-		// Size
-		if image.Size != sizeNA {
-			match := sizeReg.FindStringSubmatch(image.Size)
-			if len(match) < 4 {
-				errs = append(errs, fmt.Errorf("size match len < 4: %s", image.Size))
-				continue
-			}
-			value, err := strconv.ParseUint(match[1], 10, 64)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("error parsing size value: %s", err.Error()))
-				continue
-			}
-			unit := match[3]
-			if multiplier, exists := sizeUnitMap[unit]; exists {
-				size += value * multiplier
-			} else {
-				errs = append(errs, fmt.Errorf("unknown unit: %s", unit))
-			}
-		}
+		size += uint64(i.Size)
 		images = append(images, image)
 	}
 	stats.Size = formatBytes(size)

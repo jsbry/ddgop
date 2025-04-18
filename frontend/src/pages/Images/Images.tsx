@@ -1,13 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import { GoImages, GoDeleteImage } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
-import { OverlayTrigger, Button, Modal, ProgressBar } from 'react-bootstrap';
+import { OverlayTrigger, Button, Modal, ProgressBar, Form } from 'react-bootstrap';
 import { FaRegCopy, FaRegTrashCan, FaArrowRotateRight } from "react-icons/fa6";
 import * as h from '../helper';
 
 function Images() {
   const [data, setData] = useState<TableCol[]>([]);
   const [size, setSize] = useState<string>("--");
+  const [force, setForce] = useState<boolean>(false);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
 
@@ -130,12 +131,12 @@ function Images() {
     listImage();
   }
 
-  const deleteImage = (id: string) => {
+  const deleteImage = (id: string, force: boolean) => {
     if (inactiveBtn) {
       return;
     }
     setInactiveBtn(true);
-    const result = GoDeleteImage(id);
+    const result = GoDeleteImage(id, force);
     result.then((d) => {
       if (d.Error != null) {
         throw new Error(d.Error);
@@ -204,12 +205,22 @@ function Images() {
           <Modal.Header closeButton>
             <Modal.Title>Delete image?</Modal.Title>
           </Modal.Header>
-          <Modal.Body>The '{delModal.name}' image is selected for deletion.</Modal.Body>
+          <Modal.Body>
+            The '{delModal.name}' image is selected for deletion.<br />
+            <Form>
+              <Form.Check 
+                type="switch" 
+                id="force-switch"
+                label={`--force`} 
+                checked={force}
+                onChange={(e) => setForce(e.target.checked)}/>
+            </Form>
+          </Modal.Body>
           <Modal.Footer>
             <Button variant="outline-secondary" onClick={() => closeDelModal()}>
               Close
             </Button>
-            <Button variant="danger" disabled={inactiveBtn} onClick={() => deleteImage(delModal.id)}>
+            <Button variant="danger" disabled={inactiveBtn} onClick={() => deleteImage(delModal.id, force)}>
               Delete forever
             </Button>
           </Modal.Footer>
