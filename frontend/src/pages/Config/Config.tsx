@@ -6,8 +6,8 @@ import NotificationToast from "../../components/Toast/Toast";
 function Config() {
   const [withHostType, setWithHostType] = useState<number>(1);
   const [withHost, setWithHost] = useState<string>("");
-  const [show, setShow] = useState(false);
-  const [modified, setModified] = useState("just now");
+  const [show, setShow] = useState<boolean>(false);
+  const [modified, setModified] = useState<string>("just now");
 
   useEffect(() => {
     getConfig();
@@ -75,7 +75,7 @@ function Config() {
           </div>
         </div>
       </div>
-      <NotificationToast modified={modified} show={show} setShow={setShow}></NotificationToast>
+      <NotificationToast header="Config" body="Saved." modified={modified} show={show} setShow={setShow}></NotificationToast>
     </article>
   )
 }

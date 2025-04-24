@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { GoImages, GoDeleteImage } from "../../../wailsjs/go/main/App";
-import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
+import { createColumnHelper, getCoreRowModel, SortingState, getSortedRowModel, Column, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
 import { OverlayTrigger, Button, Modal, ProgressBar, Form } from 'react-bootstrap';
 import { FaRegCopy, FaRegTrashCan, FaArrowRotateRight } from "react-icons/fa6";
 import * as h from '../helper';
@@ -11,6 +11,7 @@ function Images() {
   const [force, setForce] = useState<boolean>(false);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   useEffect(() => {
     listImage();
@@ -54,22 +55,34 @@ function Images() {
 
   const columnHelper = createColumnHelper<TableCol>();
 
+  const sortableHeader = (headerName: string) => ({ column }: { column: Column<TableCol, string> }) => {
+    return (
+      <div
+        style={{ flex: 'auto', alignItems: 'center', cursor: 'pointer' }}
+        onClick={column.getToggleSortingHandler()}
+      >
+        {headerName}
+        {h.getSortIcon(column.getIsSorted())}
+      </div>
+    );
+  };
+
   const tableColumnDefs = [
     columnHelper.accessor((row) => row.name, {
       id: 'name',
-      header: 'Name',
+      header: sortableHeader("Name"),
     }),
     columnHelper.accessor((row) => row.tag, {
       id: 'tag',
-      header: 'Tag',
+      header: sortableHeader("Tag"),
     }),
     columnHelper.accessor((row) => row.created, {
       id: 'created',
-      header: 'Created',
+      header: sortableHeader("Created"),
     }),
     columnHelper.accessor((row) => row.size, {
       id: 'size',
-      header: 'Size',
+      header: "Size",
     }),
     columnHelper.accessor((row) => row.imageID, {
       id: 'id',
@@ -97,7 +110,10 @@ function Images() {
   const table = useReactTable<TableCol>({
     columns: tableColumnDefs,
     data: data,
+    state: { sorting },
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
   })
 
   const listImage = () => {
@@ -208,12 +224,12 @@ function Images() {
           <Modal.Body>
             The '{delModal.name}' image is selected for deletion.<br />
             <Form>
-              <Form.Check 
-                type="switch" 
+              <Form.Check
+                type="switch"
                 id="force-switch"
-                label={`--force`} 
+                label={`--force`}
                 checked={force}
-                onChange={(e) => setForce(e.target.checked)}/>
+                onChange={(e) => setForce(e.target.checked)} />
             </Form>
           </Modal.Body>
           <Modal.Footer>

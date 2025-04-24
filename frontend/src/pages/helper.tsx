@@ -1,4 +1,6 @@
 import { Tooltip } from 'react-bootstrap';
+import { SortDirection } from '@tanstack/react-table';
+import { TiArrowSortedDown, TiArrowSortedUp, TiArrowUnsorted } from "react-icons/ti";
 
 export type GProps = {
   content: string;
@@ -46,3 +48,14 @@ export const renderTooltip = (props: { text: string }) => (
     {props.text}
   </Tooltip>
 );
+
+export const getSortIcon = (sortDirection: false | SortDirection) => {
+  switch (sortDirection) {
+    case "asc":
+      return <TiArrowSortedUp />;
+    case "desc":
+      return <TiArrowSortedDown />;
+    default:
+      return <TiArrowUnsorted />;
+  }
+};

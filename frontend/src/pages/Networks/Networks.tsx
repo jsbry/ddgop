@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { GoNetworks, GoDeleteNetwork } from "../../../wailsjs/go/main/App";
-import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext } from '@tanstack/react-table';
+import { createColumnHelper, getCoreRowModel, useReactTable, flexRender, CellContext, Column, SortingState, getSortedRowModel } from '@tanstack/react-table';
 import { OverlayTrigger, Button, Modal } from 'react-bootstrap';
 import { FaRegCopy, FaRegTrashCan, FaArrowRotateRight } from "react-icons/fa6";
 import * as h from '../helper';
@@ -9,6 +9,7 @@ function Networks() {
   const [data, setData] = useState<TableCol[]>([]);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
+  const [sorting, setSorting] = useState<SortingState>([]);
 
   useEffect(() => {
     listNetwork();
@@ -49,10 +50,22 @@ function Networks() {
 
   const columnHelper = createColumnHelper<TableCol>();
 
+  const sortableHeader = (headerName: string) => ({ column }: { column: Column<TableCol, string> }) => {
+    return (
+      <div
+        style={{ flex: 'auto', alignItems: 'center', cursor: 'pointer' }}
+        onClick={column.getToggleSortingHandler()}
+      >
+        {headerName}
+        {h.getSortIcon(column.getIsSorted())}
+      </div>
+    );
+  };
+
   const tableColumnDefs = [
     columnHelper.accessor((row) => row.driver, {
       id: 'driver',
-      header: 'Driver',
+      header: sortableHeader('Driver'),
     }),
     columnHelper.accessor((row) => row.networkID, {
       id: 'id',
@@ -61,7 +74,7 @@ function Networks() {
     }),
     columnHelper.accessor((row) => row.name, {
       id: 'name',
-      header: 'Name',
+      header: sortableHeader('Name'),
     }),
     columnHelper.display({
       id: 'action',
@@ -83,7 +96,10 @@ function Networks() {
   const table = useReactTable<TableCol>({
     columns: tableColumnDefs,
     data: data,
+    state: { sorting },
     getCoreRowModel: getCoreRowModel(),
+    onSortingChange: setSorting,
+    getSortedRowModel: getSortedRowModel(),
   })
 
   const listNetwork = () => {
