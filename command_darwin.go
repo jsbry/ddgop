@@ -17,3 +17,6 @@ func execCmdPipe(cmd []string) (*exec.Cmd, io.ReadCloser, error) {
 	stdout, err := res.StdoutPipe()
 	return res, stdout, err
 }
+
+func keepAlive() {
+}

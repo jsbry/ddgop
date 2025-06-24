@@ -94,6 +94,8 @@ func main() {
 		log.Fatalf("toml.Unmarshal file: %v", err)
 	}
 
+	go keepAlive()
+
 	// Create an instance of the app structure
 	app := NewApp()
 
