@@ -1,7 +1,10 @@
 package main
 
 import (
+	"io"
+	"os/exec"
 	"runtime"
+	"syscall"
 )
 
 const (
@@ -35,4 +38,34 @@ func genCmd(cmd string) []string {
 	}
 
 	return cmds
+}
+
+func execCmd(cmd []string) ([]byte, error) {
+	var res *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		res = exec.Command(cmd[0], cmd[1:]...)
+		// res.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		res.SysProcAttr = &syscall.SysProcAttr{}
+	case "darwin", "linux":
+		res = exec.Command(cmd[0], cmd[1:]...)
+	}
+	return res.Output()
+}
+
+func execCmdPipe(cmd []string) (*exec.Cmd, io.ReadCloser, error) {
+	var res *exec.Cmd
+	var stdout io.ReadCloser
+	var err error
+	switch runtime.GOOS {
+	case "windows":
+		res = exec.Command(cmd[0], cmd[1:]...)
+		res.SysProcAttr = &syscall.SysProcAttr{}
+		// res.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+		stdout, err = res.StdoutPipe()
+	case "darwin", "linux":
+		res = exec.Command(cmd[0], cmd[1:]...)
+		stdout, err = res.StdoutPipe()
+	}
+	return res, stdout, err
 }
