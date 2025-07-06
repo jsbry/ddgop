@@ -51,6 +51,10 @@
     background-color: #f7f9ff;
 }
 
+.table-files {
+    height: calc(100vh - 330px);
+}
+
 .table-files th:nth-of-type(2) {
     min-width: 100px;
     width: 100px;
