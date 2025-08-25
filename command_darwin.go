@@ -5,6 +5,7 @@ package main
 import (
 	"io"
 	"os/exec"
+	"syscall"
 )
 
 func execCmd(cmd []string) ([]byte, error) {
@@ -19,4 +20,16 @@ func execCmdPipe(cmd []string) (*exec.Cmd, io.ReadCloser, error) {
 }
 
 func keepAlive() {
+}
+
+func getDiskUsage() (DiskUsage, error) {
+	path := "/"
+	var stat syscall.Statfs_t
+	if err := syscall.Statfs(path, &stat); err != nil {
+		return DiskUsage{}, err
+	}
+	total := stat.Blocks * uint64(stat.Bsize)
+	free := stat.Bavail * uint64(stat.Bsize)
+	used := total - free
+	return DiskUsage{Total: total, Free: free, Used: used}, nil
 }

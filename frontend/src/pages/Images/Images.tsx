@@ -8,6 +8,8 @@ import * as h from '../helper';
 function Images() {
   const [data, setData] = useState<TableCol[]>([]);
   const [size, setSize] = useState<string>("--");
+  const [total, setTotal] = useState<string>("--");
+  const [progressBar, setProgressBar] = useState<number>(0);
   const [force, setForce] = useState<boolean>(false);
   const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
   const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
@@ -136,6 +138,8 @@ function Images() {
       });
       setData(rows);
       setSize(d.Stats.Size);
+      setTotal(d.Stats.Total);
+      setProgressBar(d.Stats.ProgressBar);
     }).catch((err) => {
       console.log(err);
     });
@@ -144,6 +148,8 @@ function Images() {
   const reloadList = () => {
     setData([]);
     setSize("");
+    setTotal("");
+    setProgressBar(0);
     listImage();
   }
 
@@ -177,8 +183,8 @@ function Images() {
           <div className="col-6">
             {/* TODO */}
             {/* docker system df の RECLAIMABLE を参照する */}
-            <ProgressBar now={95} />
-            <span className="small">{size}</span>
+            <ProgressBar now={progressBar} />
+            <span className="small">{size} / {total}</span>
           </div>
           <div className="col-6 d-flex justify-content-end">
             <FaArrowRotateRight className="btn-icon" onClick={reloadList}></FaArrowRotateRight>

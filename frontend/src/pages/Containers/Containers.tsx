@@ -111,9 +111,9 @@ function Containers() {
     return (
       <>
         {image}<br />
-        {mounts && mounts.map((v) => {
+        {mounts && mounts.map((v, i) => {
           return (
-            <span className='text-black-50'>
+            <span key={i} className='text-black-50'>
               {v}<br />
             </span>
           )

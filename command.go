@@ -26,6 +26,13 @@ const (
 // dockerCmdVolumeRemove  = "docker volume rm -f %s"
 )
 
+// DiskUsage ディスクの使用状況
+type DiskUsage struct {
+	Total uint64
+	Free  uint64
+	Used  uint64
+}
+
 func genCmd(cmd string) []string {
 	cmds := []string{
 		"sh", "-c", cmd,

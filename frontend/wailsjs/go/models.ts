@@ -159,6 +159,8 @@ export namespace main {
 	}
 	export class ImageStats {
 	    Size: string;
+	    Total: string;
+	    ProgressBar: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new ImageStats(source);
@@ -167,6 +169,8 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.Size = source["Size"];
+	        this.Total = source["Total"];
+	        this.ProgressBar = source["ProgressBar"];
 	    }
 	}
 	export class Network {
