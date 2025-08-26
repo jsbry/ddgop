@@ -91,6 +91,7 @@ func (a *App) GoContainers() rContainers {
 			}
 			mounts = append(mounts, m.Name)
 		}
+		sort.Strings(mounts)
 		container.Mounts = mounts
 
 		containers = append(containers, container)
