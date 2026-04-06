@@ -1,3 +1,7 @@
+.PHONY: install
+install:
+	npm ci --prefix ./frontend
+
 .PHONY: dev
 dev:
 	wails dev
