@@ -8,7 +8,7 @@
 - `wails init -n ddgop -t react-ts`
 - `wails dev`
 
-## WSL/VirtualBox
+## WSL/~~VirtualBox~~
 
 - Execute only the required steps:
     1. `vi /etc/docker/daemon.json`

@@ -54,6 +54,10 @@ export function GoNetworks() {
   return window['go']['main']['App']['GoNetworks']();
 }
 
+export function GoOpenCompose(arg1) {
+  return window['go']['main']['App']['GoOpenCompose'](arg1);
+}
+
 export function GoOpenConsole(arg1) {
   return window['go']['main']['App']['GoOpenConsole'](arg1);
 }

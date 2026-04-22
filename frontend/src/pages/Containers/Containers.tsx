@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer } from "../../../wailsjs/go/main/App";
+import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer, GoOpenCompose } from "../../../wailsjs/go/main/App";
 import { createColumnHelper, ExpandedState, getCoreRowModel, getExpandedRowModel, useReactTable, flexRender, CellContext, Row } from '@tanstack/react-table';
-import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight, FaAngleRight, FaAngleDown } from "react-icons/fa6";
+import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight, FaAngleRight, FaAngleDown, FaFolderOpen } from "react-icons/fa6";
 import { OverlayTrigger, Button, Modal, Dropdown } from 'react-bootstrap';
 import Container from './Container';
 import * as h from '../helper';
@@ -165,6 +165,7 @@ function Containers() {
             {!isGrouped && <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>}
             <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id, state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
             <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id)}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
+            <Dropdown.Item eventKey="4" onClick={() => GoOpenCompose(id)}><FaFolderOpen className='me-1'></FaFolderOpen> Open workspace</Dropdown.Item>
           </Dropdown.Menu>
         </Dropdown>
         <div className='vr me-1'></div>
