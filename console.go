@@ -46,7 +46,11 @@ func (a *App) GoOpenCompose(containerID string) error {
 		if err != nil {
 			errs = append(errs, fmt.Errorf("ContainerInspect err: %s", err.Error()))
 		} else {
-			workingDir := inspect.Config.Labels["com.docker.compose.project.working_dir"]
+			workingDir, ok := inspect.Config.Labels["com.docker.compose.project.working_dir"]
+			if !ok {
+				errs = append(errs, fmt.Errorf("Container %s does not have working directory label", id))
+				continue
+			}
 
 			var cmd *exec.Cmd
 			// OSごとに異なる端末を起動
