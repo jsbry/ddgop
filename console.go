@@ -35,13 +35,6 @@ func (a *App) GoOpenCompose(containerID string) error {
 	list := strings.Split(containerID, ",")
 	openDirList := []string{}
 	for _, id := range list {
-		openDirList = append(openDirList, id)
-	}
-
-	slices.Sort(openDirList)
-	unique := slices.Compact(openDirList)
-
-	for _, id := range unique {
 		inspect, err := a.cli.ContainerInspect(a.ctx, id)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("ContainerInspect err: %s", err.Error()))
@@ -51,22 +44,28 @@ func (a *App) GoOpenCompose(containerID string) error {
 				errs = append(errs, fmt.Errorf("Container %s does not have working directory label", id))
 				continue
 			}
-
-			var cmd *exec.Cmd
-			// OSごとに異なる端末を起動
-			switch runtime.GOOS {
-			case "windows":
-				cmd = exec.Command(
-					"cmd.exe", "/c", "start",
-					"wsl.exe",
-					"bash", "-lc", fmt.Sprintf("cd %s && exec bash", workingDir),
-				)
-			default:
-				return nil
-			}
-
-			return cmd.Start()
+			openDirList = append(openDirList, workingDir)
 		}
+	}
+
+	slices.Sort(openDirList)
+	unique := slices.Compact(openDirList)
+
+	for _, workingDir := range unique {
+		var cmd *exec.Cmd
+		// OSごとに異なる端末を起動
+		switch runtime.GOOS {
+		case "windows":
+			cmd = exec.Command(
+				"cmd.exe", "/c", "start",
+				"wsl.exe",
+				"bash", "-lc", fmt.Sprintf("cd %s && exec bash", workingDir),
+			)
+		default:
+			return nil
+		}
+
+		cmd.Start()
 	}
 	return nil
 }
