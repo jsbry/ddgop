@@ -58,8 +58,8 @@ export function GoOpenCompose(arg1) {
   return window['go']['main']['App']['GoOpenCompose'](arg1);
 }
 
-export function GoOpenConsole(arg1) {
-  return window['go']['main']['App']['GoOpenConsole'](arg1);
+export function GoOpenConsole(arg1, arg2) {
+  return window['go']['main']['App']['GoOpenConsole'](arg1, arg2);
 }
 
 export function GoPauseContainer(arg1) {

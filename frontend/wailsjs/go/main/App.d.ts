@@ -30,7 +30,7 @@ export function GoNetworks():Promise<main.rNetworks>;
 
 export function GoOpenCompose(arg1:string):Promise<void>;
 
-export function GoOpenConsole(arg1:string):Promise<void>;
+export function GoOpenConsole(arg1:string,arg2:string):Promise<void>;
 
 export function GoPauseContainer(arg1:string):Promise<main.rPauseContainer>;
 

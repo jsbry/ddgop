@@ -354,7 +354,7 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
           <code>{execCmd}</code>
         </div>
         <div className="col-12 pt-2">
-          <button className="btn btn-sm btn-primary" onClick={() => newConsole(execCmd)}>Console</button>
+          <button className="btn btn-sm btn-primary" onClick={() => newConsole(id, execCmd)}>Console</button>
         </div>
       </div>
     )
@@ -451,8 +451,8 @@ function Container(props: { id: string, setID: React.Dispatch<React.SetStateActi
     });
   };
 
-  const newConsole = (s: string) => {
-    GoOpenConsole(s);
+  const newConsole = (id: string, cmd: string) => {
+    GoOpenConsole(id, cmd);
   };
 
   return (

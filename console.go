@@ -8,8 +8,18 @@ import (
 	"strings"
 )
 
-func (a *App) GoOpenConsole(s string) error {
+func (a *App) GoOpenConsole(id string, s string) error {
 	var cmd *exec.Cmd
+
+	workingDir := ""
+	inspect, err := a.cli.ContainerInspect(a.ctx, id)
+	if err == nil {
+		ok := false
+		workingDir, ok = inspect.Config.Labels["com.docker.compose.project.working_dir"]
+		if !ok {
+			workingDir = ""
+		}
+	}
 
 	// OSごとに異なる端末を起動
 	switch runtime.GOOS {
@@ -19,7 +29,11 @@ func (a *App) GoOpenConsole(s string) error {
 			return err
 		}
 
-		cmd = exec.Command("cmd.exe", "/c", "start", "wsl.exe")
+		cmd = exec.Command(
+			"cmd.exe", "/c", "start",
+			"wsl.exe",
+			"bash", "-lc", fmt.Sprintf("cd %s && exec bash", workingDir),
+		)
 	default:
 		return nil
 	}
