@@ -21,16 +21,20 @@
 
     2. `chown root:root /etc/docker/daemon.json`
     3. `chmod 644 /etc/docker/daemon.json`
+        1. If needed: `systemctl daemon-reload`
     4. `systemctl edit docker`
-        1. or `vi /etc/systemd/system/docker.service.d/override.conf`
+        1. or 
+        2. `mkdir /etc/systemd/system/docker.service.d/`
+        3. `vi /etc/systemd/system/docker.service.d/override.conf`
 
-        ```conf
-        [Service]
-        ExecStart=
-        ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
-        ```
+            ```conf
+            [Service]
+            ExecStart=
+            ExecStart=/usr/bin/dockerd --containerd=/run/containerd/containerd.sock
+            ```
 
     5. `systemctl restart docker`
+        1. If needed: `chmod 666 /var/run/docker.sock`
     6. `systemctl status docker`
         - old: `/usr/bin/dockerd -H fd:// --containerd=/run/containerd/containerd.sock`
         - new: `/usr/bin/dockerd --containerd=/run/containerd/containerd.sock`
