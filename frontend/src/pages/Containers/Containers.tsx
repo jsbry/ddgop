@@ -1,0 +1,496 @@
+import { useEffect, useState, useCallback } from 'react';
+import { GoContainers, GoStatsContainers, GoStartContainer, GoUnpauseContainer, GoStopContainer, GoPauseContainer, GoDeleteContainer, GoRestartContainer, GoOpenCompose } from "../../../wailsjs/go/main/App";
+import { createColumnHelper, ExpandedState, getCoreRowModel, getExpandedRowModel, useReactTable, flexRender, CellContext, Row } from '@tanstack/react-table';
+import { FaCircle, FaRegCopy, FaPlay, FaStop, FaEllipsisVertical, FaRegTrashCan, FaEye, FaPause, FaArrowRotateRight, FaAngleRight, FaAngleDown, FaFolderOpen } from "react-icons/fa6";
+import { OverlayTrigger, Button, Modal, Dropdown } from 'react-bootstrap';
+import Container from './Container';
+import * as h from '../helper';
+
+function Containers() {
+  const [data, setData] = useState<TableCol[]>([]);
+  const [expanded, setExpanded] = useState<ExpandedState>({})
+  const [copyTooltip, setCopyTooltip] = useState<string>("Copy to clipboard");
+  const [inactiveBtn, setInactiveBtn] = useState<boolean>(false);
+  const [memUsage, setMemUsage] = useState<string>("--");
+  const [memLimit, setMemLimit] = useState<string>("--");
+  const [cpuUsage, setCPUUsage] = useState<string>("--");
+  const [cpuLimit, setCPULimit] = useState<string>("--");
+  const [id, setID] = useState<string>("");
+
+  type TableCol = {
+    containerID: string;
+    image: string;
+    command: string;
+    created: string;
+    status: string;
+    ports: number[];
+    name: string;
+    state: string;
+    mounts?: string[];
+    subRows?: TableCol[];
+  };
+
+  const renderState = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const id = row.original.containerID;
+    if (id == "") {
+      return (
+        <>
+          {row.getIsExpanded() ? <FaAngleDown {...{
+            onClick: row.getToggleExpandedHandler(),
+            style: { cursor: 'pointer' },
+            className: "me-1",
+          }}></FaAngleDown> : <FaAngleRight {...{
+            onClick: row.getToggleExpandedHandler(),
+            style: { cursor: 'pointer' },
+            className: "me-1",
+          }}></FaAngleRight>}
+        </>
+      )
+    }
+
+    const state = row.original.state;
+    let color = "";
+    switch (state) {
+      case "created":
+        color = "#7f93ff";
+        break;
+      case "restarting":
+        color = "#ffdb20";
+        break;
+      case "running":
+        color = "#00d931";
+        break;
+      case "removing":
+        color = "#ff4343";
+        break;
+      case "paused":
+        color = "#ffdb20";
+        break;
+      case "exited":
+        color = "#ff4343";
+        break;
+      case "deads":
+        color = "#000";
+        break;
+    }
+    return (
+      <div style={{ paddingLeft: `${row.depth}rem` }}>
+        <FaCircle color={color}></FaCircle>
+      </div>
+    )
+  }, []);
+
+  const renderContainerID = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const id = row.original.containerID;
+    if (id == "") {
+      const subRows = row.original.subRows;
+      return (
+        <span className='text-black-50'>
+          {subRows?.length} containers
+        </span>
+      )
+    }
+    return (
+      <>
+        {id.slice(0, 12)}
+        <OverlayTrigger
+          placement="top"
+          delay={{ show: 250, hide: 400 }}
+          overlay={h.renderTooltip({ text: copyTooltip })}>
+          <span>
+            <FaRegCopy className="ms-1 btn-icon" onClick={() => h.copyToClipboard(id, setCopyTooltip)}></FaRegCopy>
+          </span>
+        </OverlayTrigger>
+      </>
+    )
+  }, [copyTooltip]);
+
+  const renderImage = useCallback(({ row }: { row: Row<TableCol> }) => {
+    const image = row.original.image;
+    const mounts = row.original.mounts;
+    return (
+      <>
+        {image}<br />
+        {mounts && mounts.map((v, i) => {
+          return (
+            <span key={i} className='text-black-50'>
+              {v}<br />
+            </span>
+          )
+        })}
+      </>
+    )
+  }, []);
+
+  const renderPorts = useCallback(({ getValue }: CellContext<TableCol, number[]>) => {
+    const ports = getValue();
+    const host = "localhost"
+    if (!ports) {
+      return <></>
+    }
+    return (
+      <>
+        {ports.map((port, i) => {
+          let scheme = "http"
+          if (port == 443) {
+            scheme = "https"
+          }
+          return (
+            <a key={i} href={scheme + "://" + host + ":" + port} target='_blank'>:{port}<br /></a>
+          )
+        })}
+      </>
+    );
+  }, []);
+
+  const renderActions = useCallback(({ row }: CellContext<TableCol, unknown>) => {
+    let id = row.original.containerID.slice(0, 12);
+    const state = row.original.state;
+    const name = row.original.name;
+    const subRows = row.original.subRows;
+    let isGrouped = false;
+    if (typeof subRows !== "undefined") {
+      isGrouped = true;
+      id = subRows.map(c => c.containerID.slice(0, 12)).join(",");
+    }
+    return (
+      <div className='input-group'>
+        <Button variant='light' className={`me-1 rounded-circle ${!h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => startContainer(id, state)}><FaPlay></FaPlay></Button>
+        <Button variant='light' className={`me-1 rounded-circle ${h.isRunning(state) ? '' : 'd-none'}`} disabled={inactiveBtn} onClick={() => stopContainer(id)}><FaStop></FaStop></Button>
+        <Dropdown>
+          <Dropdown.Toggle variant="light" className='me-1 rounded-circle'>
+            <FaEllipsisVertical></FaEllipsisVertical>
+          </Dropdown.Toggle>
+          <Dropdown.Menu>
+            {!isGrouped && <Dropdown.Item eventKey="1" disabled={inactiveBtn} onClick={() => setID(id)}><FaEye className='me-1'></FaEye> View details</Dropdown.Item>}
+            <Dropdown.Item eventKey="2" disabled={inactiveBtn || h.isPaused(state)} onClick={() => pauseContainer(id, state)}><FaPause className='me-1'></FaPause> Pause</Dropdown.Item>
+            <Dropdown.Item eventKey="3" disabled={inactiveBtn} onClick={() => restartContainer(id)}><FaArrowRotateRight className='me-1'></FaArrowRotateRight> Restart</Dropdown.Item>
+            <Dropdown.Item eventKey="4" onClick={() => GoOpenCompose(id)}><FaFolderOpen className='me-1'></FaFolderOpen> Open workspace</Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        <div className='vr me-1'></div>
+        <Button variant='light' className='rounded-circle' onClick={() => confirmDeleteContainer(id, name)}><FaRegTrashCan></FaRegTrashCan></Button>
+      </div>
+    )
+  }, [inactiveBtn]);
+
+  const columnHelper = createColumnHelper<TableCol>();
+
+  const tableColumnDefs = [
+    columnHelper.accessor((row) => row.state, {
+      id: 'state',
+      header: '#',
+      cell: renderState,
+    }),
+    columnHelper.accessor((row) => row.name, {
+      id: 'name',
+      header: 'Name',
+    }),
+    columnHelper.accessor((row) => row.containerID, {
+      id: 'container_id',
+      header: 'Container ID',
+      cell: renderContainerID,
+    }),
+    columnHelper.accessor((row) => row.image, {
+      id: 'image',
+      header: 'Image / Volume',
+      cell: renderImage,
+    }),
+    columnHelper.accessor((row) => row.ports, {
+      id: 'ports',
+      header: 'Port(s)',
+      cell: renderPorts,
+    }),
+    columnHelper.accessor((row) => row.status, {
+      id: 'status',
+      header: 'status',
+    }),
+    columnHelper.display({
+      id: 'action',
+      header: 'Actions',
+      cell: renderActions,
+    }),
+  ];
+
+  type ModalVal = {
+    id: string;
+    name: string;
+    show: boolean;
+  }
+  const [delModal, setDelModal] = useState<ModalVal>({ id: "", name: "", show: false });
+
+  const table = useReactTable<TableCol>({
+    columns: tableColumnDefs,
+    data: data,
+    state: {
+      expanded,
+    },
+    getSubRows: (row) => row.subRows,
+    onExpandedChange: setExpanded,
+    getCoreRowModel: getCoreRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+  })
+
+  useEffect(() => {
+    listContainer(id);
+
+    const interval = setInterval(() => {
+      listContainer(id);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [id]);
+
+  const listContainer = (id: string) => {
+    if (id != "") {
+      return;
+    }
+
+    const result = GoContainers();
+    result.then((d) => {
+      // console.log(d);
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+      let rows: TableCol[] = [];
+      d.Containers.forEach((container) => {
+        const t: TableCol = {
+          containerID: container.ContainerID,
+          image: container.Image,
+          command: container.Command,
+          created: container.Created,
+          status: container.Status,
+          ports: container.Ports,
+          name: container.Name,
+          state: container.State,
+          mounts: container.Mounts,
+        };
+
+        if (container.SubContainers) {
+          let subRows: TableCol[] = [];
+          container.SubContainers.forEach((container) => {
+            const t: TableCol = {
+              containerID: container.ContainerID,
+              image: container.Image,
+              command: container.Command,
+              created: container.Created,
+              status: container.Status,
+              ports: container.Ports,
+              name: container.Name,
+              state: container.State,
+              mounts: container.Mounts,
+            };
+
+            subRows.push(t);
+          });
+          t.subRows = subRows;
+        }
+
+        rows.push(t);
+      });
+      setData(rows);
+    }).catch((err) => {
+      console.log(err);
+    });
+
+    const stats = GoStatsContainers();
+    stats.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+      console.log(d);
+      d.ContainerStats.forEach((container) => {
+        // TODO s
+        const s = {
+          container_id: container.ContainerID,
+          cpu_perc: container.CPUPerc,
+          mem_perc: container.MemPerc,
+          mem_usage: container.MemUsage,
+        };
+      });
+
+      setMemUsage(d.Stats.MemUsage);
+      setMemLimit(d.Stats.MemLimit);
+      setCPUUsage(d.Stats.CPUUsage);
+      setCPULimit(d.Stats.CPULimit);
+    }).catch((err) => {
+      console.log(err);
+    });
+  };
+
+  const startContainer = async (id: string, state: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    let result;
+    if (h.isPaused(state)) {
+      result = GoUnpauseContainer(id);
+    } else {
+      result = GoStartContainer(id);
+    }
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
+    });
+  };
+
+  const stopContainer = async (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoStopContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
+    });
+  };
+
+  const pauseContainer = (id: string, state: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    if (h.isPaused(state)) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoPauseContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
+    });
+  };
+
+  const restartContainer = (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoRestartContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      listContainer("");
+    });
+  };
+
+  const deleteContainer = (id: string) => {
+    if (inactiveBtn) {
+      return;
+    }
+    setInactiveBtn(true);
+    const result = GoDeleteContainer(id);
+    result.then((d) => {
+      if (d.Error != null) {
+        throw new Error(d.Error);
+      }
+    }).catch((err) => {
+      console.log(err);
+    }).finally(() => {
+      setInactiveBtn(false);
+      closeDelModal();
+      listContainer("");
+    });
+  };
+
+  const closeDelModal = () => {
+    setDelModal({ id: delModal.id, name: delModal.name, show: false });
+  };
+
+  const confirmDeleteContainer = (id: string, name: string) => {
+    setDelModal({ id: id, name: name, show: true });
+  };
+
+  return (
+    <article>
+      {id ?
+        <Container id={id} setID={setID}></Container> :
+        <div>
+          <div className="row">
+            <div className="col-6">
+              <span>Container CPU usage</span>
+              <h5 className='fw-bold'><span className='text-success'>{cpuUsage}</span> / <span className='text-black-50'>{cpuLimit}</span></h5>
+            </div>
+            <div className="col-6">
+              <span>Container memory usage</span>
+              <h5 className='fw-bold'><span className='text-success'>{memUsage}</span> / <span className='text-black-50'>{memLimit}</span></h5>
+            </div>
+            <div className="col-12">
+              <div className="table-area table-containers overflow-auto">
+                <table className="table table-hover table-responsive-lg table-sm">
+                  <thead className="sticky-top">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <tr key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                          <th key={header.id} colSpan={header.colSpan}>
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                          </th>
+                        ))}
+                      </tr>
+                    ))}
+                  </thead>
+                  <tbody className="table-group-divider small">
+                    {table.getRowModel().rows.map((row, index) => {
+                      return (
+                        <tr key={index}>
+                          {row.getVisibleCells().map((cell) => {
+                            return (
+                              <td key={cell.column.id}>
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <Modal show={delModal.show} onHide={() => closeDelModal()}>
+            <Modal.Header closeButton>
+              <Modal.Title>Delete container?</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>The '{delModal.name}' container is selected for deletion. Any anonymous volumes associated with this container are also deleted.</Modal.Body>
+            <Modal.Footer>
+              <Button variant="outline-secondary" onClick={() => closeDelModal()}>
+                Close
+              </Button>
+              <Button variant="danger" disabled={inactiveBtn} onClick={() => deleteContainer(delModal.id)}>
+                Delete forever
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        </div>
+      }
+    </article>
+  )
+}
+
+export default Containers
